@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
+
 namespace fakebook.Models;
 
 public class ApplicationDbContext(
@@ -16,7 +17,7 @@ public class ApplicationDbContext(
             .HasForeignKey(x => x.ParentId)
             .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
-        
+
         modelBuilder.Entity<Post>()
             .HasOne(x => x.User)
             .WithMany(x => x.Posts)
@@ -24,4 +25,7 @@ public class ApplicationDbContext(
             .IsRequired()
             .OnDelete(DeleteBehavior.Cascade);
     }
+
+    public DbSet<Post> Posts => Set<Post>();
+    public DbSet<User> Users => Set<User>();
 }

@@ -1,6 +1,8 @@
 using Asp.Versioning;
+using fakebook.Models;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
 
@@ -13,9 +15,9 @@ builder.Services.AddSwaggerGen(options => {
     options.SwaggerDoc(
         "v1",
         new OpenApiInfo { Title = "Fakebook", Version = "v1.0" });
-    options.SwaggerDoc(
-        "v2",
-        new OpenApiInfo { Title = "Fakebook", Version = "v2.0" });
+    //options.SwaggerDoc(
+    //    "v2",
+    //    new OpenApiInfo { Title = "Fakebook", Version = "v2.0" });
 });
 builder.Services.AddCors(options =>
 {
@@ -50,6 +52,10 @@ builder.Services.AddApiVersioning(options => {
     options.SubstituteApiVersionInUrl = true;
 });
 
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("DefaultConnection")));
+
 var app = builder.Build();
 
 if (app.Configuration.GetValue<bool>("UseSwagger"))
@@ -59,9 +65,9 @@ if (app.Configuration.GetValue<bool>("UseSwagger"))
         options.SwaggerEndpoint(
             $"/swagger/v1/swagger.json",
             $"Fakebook v1");
-        options.SwaggerEndpoint(
-            $"/swagger/v2/swagger.json",
-            $"Fakebook v2");
+        //options.SwaggerEndpoint(
+        //    $"/swagger/v2/swagger.json",
+        //    $"Fakebook v2");
     });
 }
 
@@ -76,14 +82,14 @@ app.UseAuthorization();
 
 app.MapGet("/error",
     [ApiVersion("1.0")]
-    [ApiVersion("2.0")]
+    //[ApiVersion("2.0")]
     [EnableCors("AnyOrigin")]
     [ResponseCache(NoStore = true)] () =>
         Results.Problem());
 
 app.MapGet("/error/test",
     [ApiVersion("1.0")]
-    [ApiVersion("2.0")]
+    //[ApiVersion("2.0")]
     [EnableCors("AnyOrigin_GetOnly")]
     [ResponseCache(NoStore = true)] () =>
         { throw new Exception("test"); });
