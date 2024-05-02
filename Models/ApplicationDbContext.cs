@@ -16,14 +16,14 @@ public class ApplicationDbContext(
             .WithMany(x => x.Replies)
             .HasForeignKey(x => x.ParentId)
             .IsRequired(false)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Post>()
             .HasOne(x => x.User)
             .WithMany(x => x.Posts)
             .HasForeignKey(x => x.UserId)
             .IsRequired()
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.NoAction);
     }
 
     public DbSet<Post> Posts => Set<Post>();
