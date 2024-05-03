@@ -15,7 +15,6 @@ public class ApplicationDbContext(
             .HasOne(x => x.Parent)
             .WithMany(x => x.Replies)
             .HasForeignKey(x => x.ParentId)
-            .IsRequired(false)
             .OnDelete(DeleteBehavior.NoAction);
 
         modelBuilder.Entity<Post>()
@@ -24,6 +23,7 @@ public class ApplicationDbContext(
             .HasForeignKey(x => x.UserId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
+
     }
 
     public DbSet<Post> Posts => Set<Post>();

@@ -19,7 +19,6 @@ public class Post
     public PostStatus Status { get; set; }
     [Required]
     public DateTime CreatedAt {  get; set; }
-    [Required]
     public DateTime? DeletedAt { get; set; }
 
     public User User { get; set; }
@@ -27,4 +26,4 @@ public class Post
     public ICollection<Post> Replies { get; set; }
 }
 
-public enum PostStatus { PUBLISED, DRAFT, DELETED }
+public enum PostStatus { Publised, Draft, Deleted }
