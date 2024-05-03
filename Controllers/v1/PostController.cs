@@ -14,12 +14,20 @@ public class PostController(
 {
 
     [HttpGet]
-    public async Task<RestDTO<Post[]>> Get(int pageIndex = 0, int pageSize = 10)
+    public async Task<RestDTO<Post[]>> Get(int pageIndex = 0, int pageSize = 10, string? q = null)
     {
-        var query = context.Posts
+        var query = context.Posts.AsQueryable();
+
+        if (!string.IsNullOrEmpty(q))
+            query = query.Where(p => p.Body.Contains(q));
+
+        query = query
             .Where(p => p.Status != PostStatus.Deleted)
+            .OrderByDescending(p => p.CreatedAt)
             .Skip(pageIndex * pageSize)
             .Take(pageSize);
+
+        // For some reason User isn't populating...
         var results = await query.ToArrayAsync();
         return new RestDTO<Post[]>
         {
@@ -27,12 +35,53 @@ public class PostController(
             PageIndex = pageIndex,
             PageSize = pageSize,
             RecordCount = results.Length,
+            Q = q,
         };
     }
 
     [HttpPost]
-    public Post Post(Post post)
+    [ResponseCache(NoStore = true)]
+    public async Task<RestDTO<Post?>> Post(PostDTO postData)
     {
-        return new Post();
+        Post post = new()
+        {
+            UserId = 2,  // Needs to be set via auth
+            Body = postData.Body,
+            ParentId = postData.ParentId,
+            Status = postData.Status ?? 0,
+            CreatedAt = DateTime.Now,
+        };
+
+        context.Posts.Add(post);
+        await context.SaveChangesAsync();
+
+        return new RestDTO<Post?>
+        {
+            Data = post
+        };
+    }
+
+
+    // TODO: Fill this in
+    [HttpPut]
+    [ResponseCache(NoStore = true)]
+    public async Task<RestDTO<Post?>> Put(PostDTO postData)
+    {
+        Post post = new()
+        {
+            UserId = 2,  // Needs to be set via auth
+            Body = postData.Body,
+            ParentId = postData.ParentId,
+            Status = postData.Status ?? 0,
+            CreatedAt = DateTime.Now,
+        };
+
+        context.Posts.Add(post);
+        await context.SaveChangesAsync();
+
+        return new RestDTO<Post?>
+        {
+            Data = post
+        };
     }
 }
