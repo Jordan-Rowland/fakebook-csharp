@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using fakebook.DTO.v1;
 using fakebook.Models;
 using Microsoft.EntityFrameworkCore;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace fakebook.Controllers.v1;
 [Route("v{version:apiVersion}/posts")]
@@ -12,9 +13,32 @@ namespace fakebook.Controllers.v1;
 public class PostController(
     ILogger<PostController> logger, ApplicationDbContext context) : ControllerBase
 {
+    [HttpPost]
+    [ResponseCache(NoStore = true)]
+    public async Task<RestDTO<Post?>> Post(PostDTO postData)
+    {
+        // Needs validation and extract this to service method
+        // Need separate DTOs for this and PUT methods
+        Post post = new()
+        {
+            UserId = 2,  // Needs to be set via auth
+            Body = postData.Body,
+            ParentId = postData.ParentId,
+            Status = postData.Status ?? 0,
+            CreatedAt = DateTime.Now,
+        };
+
+        context.Posts.Add(post);
+        await context.SaveChangesAsync();
+
+        return new RestDTO<Post?>
+        {
+            Data = post
+        };
+    }
 
     [HttpGet]
-    public async Task<RestDTO<Post[]>> Get(int pageIndex = 0, int pageSize = 10, string? q = null)
+    public async Task<RestDTO<Post[]>> GetAll(int pageIndex = 0, int pageSize = 10, string? q = null)
     {
         var query = context.Posts.AsQueryable();
 
@@ -39,28 +63,14 @@ public class PostController(
         };
     }
 
-    [HttpPost]
-    [ResponseCache(NoStore = true)]
-    public async Task<RestDTO<Post?>> Post(PostDTO postData)
+    [HttpGet("{id}")]
+    public async Task<Post> GetOne(int id)
     {
-        Post post = new()
-        {
-            UserId = 2,  // Needs to be set via auth
-            Body = postData.Body,
-            ParentId = postData.ParentId,
-            Status = postData.Status ?? 0,
-            CreatedAt = DateTime.Now,
-        };
+        var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
+        // Make sure Post exists
 
-        context.Posts.Add(post);
-        await context.SaveChangesAsync();
-
-        return new RestDTO<Post?>
-        {
-            Data = post
-        };
+        return query;
     }
-
 
     // TODO: Fill this in
     [HttpPut]
@@ -76,12 +86,22 @@ public class PostController(
             CreatedAt = DateTime.Now,
         };
 
-        context.Posts.Add(post);
+        context.Posts.Update(post);
         await context.SaveChangesAsync();
 
+        // Figure out 
         return new RestDTO<Post?>
         {
             Data = post
         };
     }
+
+    [HttpDelete("{id}")]
+    public async Task<Post> Delete(int id)
+    {
+        var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
+        // Update DeletedAt and Status
+        return query;
+    }
+
 }
