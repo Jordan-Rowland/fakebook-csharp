@@ -1,6 +1,6 @@
 ﻿namespace fakebook.DTO.v1;
 
-public class RestDTO<T>
+public class RestDTO<T>  // Rename this
 {
     public T Data { get; set; } = default!;
     public int? PageIndex { get; set; }

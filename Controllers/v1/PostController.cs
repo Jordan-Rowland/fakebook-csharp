@@ -5,13 +5,14 @@ using fakebook.DTO.v1;
 using fakebook.Models;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using System.ComponentModel.DataAnnotations;
 
 namespace fakebook.Controllers.v1;
 [Route("v{version:apiVersion}/posts")]
 [ApiController]
 [ApiVersion("1.0")]
 public class PostController(
-    ILogger<PostController> logger, ApplicationDbContext context) : ControllerBase
+    ApplicationDbContext context, ILogger<PostController> logger) : ControllerBase
 {
     [HttpPost]
     [ResponseCache(NoStore = true)]
@@ -38,28 +39,28 @@ public class PostController(
     }
 
     [HttpGet]
-    public async Task<RestDTO<Post[]>> GetAll(int pageIndex = 0, int pageSize = 10, string? q = null)
+    public async Task<RestDTO<Post[]>> GetAll([FromQuery] PagingDTO paging)
     {
         var query = context.Posts.AsQueryable();
 
-        if (!string.IsNullOrEmpty(q))
-            query = query.Where(p => p.Body.Contains(q));
+        if (!string.IsNullOrEmpty(paging.Q))
+            query = query.Where(p => p.Body.Contains(paging.Q));
 
         query = query
             .Where(p => p.Status != PostStatus.Deleted)
             .OrderByDescending(p => p.CreatedAt)
-            .Skip(pageIndex * pageSize)
-            .Take(pageSize);
+            .Skip(paging.PageIndex * paging.PageSize)
+            .Take(paging.PageSize);
 
         // For some reason User isn't populating...
         var results = await query.ToArrayAsync();
         return new RestDTO<Post[]>
         {
             Data = results,
-            PageIndex = pageIndex,
-            PageSize = pageSize,
+            PageIndex = paging.PageIndex,
+            PageSize = paging.PageSize,
             RecordCount = results.Length,
-            Q = q,
+            Q = paging.Q,
         };
     }
 
@@ -73,7 +74,7 @@ public class PostController(
     }
 
     // TODO: Fill this in
-    [HttpPut]
+    [HttpPut("{id}")]
     [ResponseCache(NoStore = true)]
     public async Task<RestDTO<Post?>> Put(PostDTO postData)
     {
