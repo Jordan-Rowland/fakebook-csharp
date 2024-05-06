@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using fakebook.Models;
 using Microsoft.AspNetCore.Cors;
+using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
@@ -56,8 +57,10 @@ builder.Services.AddApiVersioning(options => {
 });
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+//builder.Services.Configure<ApiBehaviorOptions>(  // For customer modelState validator logic
+//    options => options.SuppressModelStateInvalidFilter = true);
 
 var app = builder.Build();
 
@@ -87,8 +90,22 @@ app.MapGet("/error",
     [ApiVersion("1.0")]
     //[ApiVersion("2.0")]
     [EnableCors("AnyOrigin")]
-    [ResponseCache(NoStore = true)] () =>
-        Results.Problem());
+    [ResponseCache(NoStore = true)] (HttpContext context) =>
+    {
+        var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
+
+        // TODO: logging, etc
+
+        ProblemDetails details = new()
+        { 
+            Detail = exceptionHandler?.Error.Message,
+            Type ="https:/ /tools.ietf.org/html/rfc7231#section-6.6.1\";",
+            Status = StatusCodes.Status500InternalServerError,
+        };
+        details.Extensions["traceId"] =
+            System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
+        return Results.Problem(details);
+    });
 
 app.MapGet("/error/test",
     [ApiVersion("1.0")]

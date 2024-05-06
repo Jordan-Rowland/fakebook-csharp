@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace fakebook.DTO.v1;
 
-public class PostDTO
+public class PostRequestDTO
 {
     // See if I can use a constructor to validate the data
 

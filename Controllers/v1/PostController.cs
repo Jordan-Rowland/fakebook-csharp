@@ -1,11 +1,13 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 using fakebook.DTO.v1;
 using fakebook.Models;
-using Microsoft.EntityFrameworkCore;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
-using System.ComponentModel.DataAnnotations;
+using PostService = fakebook.Services.v1.Post;
+using fakebook.Services.v1;
+using Microsoft.Extensions.Hosting;
+
 
 namespace fakebook.Controllers.v1;
 [Route("v{version:apiVersion}/posts")]
@@ -16,45 +18,19 @@ public class PostController(
 {
     [HttpPost]
     [ResponseCache(NoStore = true)]
-    public async Task<RestDTO<Post?>> Post(PostDTO postData)
+    public async Task<PostResponseDTO> Post(PostRequestDTO postData)
     {
-        // Needs validation and extract this to service method
-        // Need separate DTOs for this and PUT methods
-        Post post = new()
-        {
-            UserId = 2,  // Needs to be set via auth
-            Body = postData.Body,
-            ParentId = postData.ParentId,
-            Status = postData.Status ?? 0,
-            CreatedAt = DateTime.Now,
-        };
-
-        context.Posts.Add(post);
-        await context.SaveChangesAsync();
-
-        return new RestDTO<Post?>
-        {
-            Data = post
-        };
+        var post = await PostService.CreatePost(context, postData);
+        // Return an object with [Data] instead of just the post object
+        return PostResponseDTO.Dump(post); 
     }
 
     [HttpGet]
-    public async Task<RestDTO<Post[]>> GetAll([FromQuery] PagingDTO paging)
+    public async Task<RestResponseDTO<PostResponseDTO[]>> GetPosts([FromQuery] PagingDTO paging)
     {
-        var query = context.Posts.AsQueryable();
-
-        if (!string.IsNullOrEmpty(paging.Q))
-            query = query.Where(p => p.Body.Contains(paging.Q));
-
-        query = query
-            .Where(p => p.Status != PostStatus.Deleted)
-            .OrderByDescending(p => p.CreatedAt)
-            .Skip(paging.PageIndex * paging.PageSize)
-            .Take(paging.PageSize);
-
-        // For some reason User isn't populating...
-        var results = await query.ToArrayAsync();
-        return new RestDTO<Post[]>
+        var results = (await PostService.GetPosts(context, paging))
+            .Select(PostResponseDTO.Dump).ToArray();
+        return new RestResponseDTO<PostResponseDTO[]>  // Maybe drop this into a method
         {
             Data = results,
             PageIndex = paging.PageIndex,
@@ -65,10 +41,10 @@ public class PostController(
     }
 
     [HttpGet("{id}")]
-    public async Task<Post> GetOne(int id)
+    public async Task<Models.Post> GetPost(int id)
     {
-        var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
         // Make sure Post exists
+        var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
 
         return query;
     }
@@ -76,29 +52,31 @@ public class PostController(
     // TODO: Fill this in
     [HttpPut("{id}")]
     [ResponseCache(NoStore = true)]
-    public async Task<RestDTO<Post?>> Put(PostDTO postData)
+    public async Task<RestResponseDTO<Models.Post?>> Put(PostRequestDTO postData)
     {
-        Post post = new()
+        // Test accessing User from Post, post.User
+
+        Models.Post post = new()
         {
             UserId = 2,  // Needs to be set via auth
             Body = postData.Body,
             ParentId = postData.ParentId,
             Status = postData.Status ?? 0,
-            CreatedAt = DateTime.Now,
+            CreatedAt = DateTime.Now,  // Update the updatedAt variable, not created
         };
 
         context.Posts.Update(post);
         await context.SaveChangesAsync();
 
         // Figure out 
-        return new RestDTO<Post?>
+        return new RestResponseDTO<Models.Post?>
         {
             Data = post
         };
     }
 
     [HttpDelete("{id}")]
-    public async Task<Post> Delete(int id)
+    public async Task<Models.Post> Delete(int id)
     {
         var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
         // Update DeletedAt and Status
