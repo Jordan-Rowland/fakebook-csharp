@@ -1,11 +1,9 @@
-﻿using Azure;
+﻿using Microsoft.EntityFrameworkCore;
+
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Net;
+
 
 namespace fakebook.Services.v1;
 
