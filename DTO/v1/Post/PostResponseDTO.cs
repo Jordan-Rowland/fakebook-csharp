@@ -1,6 +1,6 @@
-﻿namespace fakebook.DTO.v1;
+﻿namespace fakebook.DTO.v1.Post;
 
-public class PostResponseDTO : PostRequestDTO
+public class PostResponseDTO : PostNewDTO
 {
     public int UserId { get; set; }
     //public Models.User User { get; set; }  // This should be UserDTO

@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using System.Diagnostics;
 using System.Text.Json.Serialization;
 
 
@@ -59,7 +60,7 @@ builder.Services.AddApiVersioning(options => {
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//builder.Services.Configure<ApiBehaviorOptions>(  // For customer modelState validator logic
+//builder.Services.Configure<ApiBehaviorOptions>(  // For custom modelState validator logic
 //    options => options.SuppressModelStateInvalidFilter = true);
 
 var app = builder.Build();
@@ -88,19 +89,17 @@ app.UseAuthorization();
 
 app.MapGet("/error",
     [ApiVersion("1.0")]
-    //[ApiVersion("2.0")]
     [EnableCors("AnyOrigin")]
-    [ResponseCache(NoStore = true)] (HttpContext context) =>
+    [ResponseCache(NoStore = true)]
+    (HttpContext context) =>
     {
         var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
 
         // TODO: logging, etc
-
         ProblemDetails details = new()
-        { 
-            Detail = exceptionHandler?.Error.Message,
-            Type ="https:/ /tools.ietf.org/html/rfc7231#section-6.6.1\";",
-            Status = StatusCodes.Status500InternalServerError,
+        {
+            Detail = exceptionHandler!.Error.Message,
+            Status = (exceptionHandler.Error as BadHttpRequestException)?.StatusCode,
         };
         details.Extensions["traceId"] =
             System.Diagnostics.Activity.Current?.Id ?? context.TraceIdentifier;
@@ -109,10 +108,9 @@ app.MapGet("/error",
 
 app.MapGet("/error/test",
     [ApiVersion("1.0")]
-    //[ApiVersion("2.0")]
     [EnableCors("AnyOrigin_GetOnly")]
     [ResponseCache(NoStore = true)] () =>
-        { throw new Exception("test"); });
+        { throw new BadHttpRequestException("test", StatusCodes.Status412PreconditionFailed); });
 
 app.MapControllers();
 

@@ -1,12 +1,17 @@
-﻿using fakebook.DTO.v1;
+﻿using Azure;
+using fakebook.DTO.v1;
+using fakebook.DTO.v1.Post;
 using fakebook.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
 
 namespace fakebook.Services.v1;
 
 public static class Post
 {
-    public static async Task<Models.Post> CreatePost(ApplicationDbContext context, PostRequestDTO postData)
+    public static async Task<Models.Post> CreatePost(ApplicationDbContext context, PostNewDTO postData)
     {
         Models.Post post = new()
         {
@@ -21,7 +26,8 @@ public static class Post
         return post;
     }
 
-    public static async Task<Models.Post[]> GetPosts(ApplicationDbContext context, PagingDTO? paging)
+    public static async Task<Models.Post[]> GetPosts(
+        ApplicationDbContext context, PagingDTO? paging = null)
     {
         var query = context.Posts.AsQueryable();
         query = query
@@ -41,4 +47,26 @@ public static class Post
         return await query.ToArrayAsync();
     }
 
+    public static async Task<Models.Post> GetPost(ApplicationDbContext context, int id)
+    {
+
+        // Task<ActionResult<RestDTO<Domain[]>>>
+
+        var post = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
+        if (post == null)
+        {
+            throw new BadHttpRequestException($"Post with ID {id} Not Found", StatusCodes.Status404NotFound);
+        }
+        return post;
+    }
+
+    public static async Task<Models.Post> UpdatePost(ApplicationDbContext context, int id, PostUpdateDTO postData)
+    {
+        var post = await GetPost(context, id);
+        post.Body = postData.Body;
+        post.Status = postData.Status ?? post.Status;
+        context.Posts.Update(post);
+        await context.SaveChangesAsync();
+        return post;
+    }
 }
