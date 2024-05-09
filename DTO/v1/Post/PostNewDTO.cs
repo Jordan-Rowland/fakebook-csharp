@@ -10,5 +10,6 @@ public class PostNewDTO : PostUpdateDTO
 
     [StringLength(400)]
     [Required]
+    public string Body { get; set; }
     public int? ParentId { get; set; }
 }

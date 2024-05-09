@@ -16,14 +16,17 @@ namespace fakebook.Controllers.v1;
 public class PostController(
     ApplicationDbContext context, ILogger<PostController> logger) : ControllerBase
 {
-    // https://code-maze.com/swagger-ui-asp-net-core-web-api/
     [HttpPost]
+    // https://code-maze.com/swagger-ui-asp-net-core-web-api/
     [ProducesResponseType(201)]
     [ProducesResponseType(422)]
+    [ProducesResponseType(400)]
     // Probably need 422 responses
     [ResponseCache(NoStore = true)]
     public async Task<RestDataDTO<PostResponseDTO>> Post(PostNewDTO postData)
     {
+        // Where there was no user and I tried to make a post, I got a DB crash,
+        // But it didn't throw a good error. Figure out why
         var post = await PostService.CreatePost(context, postData);
         return new RestDataDTO<PostResponseDTO> { Data = PostResponseDTO.Dump(post) };
     }

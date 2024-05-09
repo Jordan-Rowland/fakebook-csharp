@@ -3,6 +3,7 @@
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
+using System.Diagnostics;
 
 
 namespace fakebook.Services.v1;
@@ -11,17 +12,31 @@ public static class Post
 {
     public static async Task<Models.Post> CreatePost(ApplicationDbContext context, PostNewDTO postData)
     {
-        Models.Post post = new()
+        // Try and except block and throw a meaningful error!
+        try
         {
-            UserId = 2,  // Needs to be set via auth
-            Body = postData.Body,
-            ParentId = postData.ParentId,
-            Status = postData.Status ?? 0,
-            CreatedAt = DateTime.Now,
-        };
-        context.Posts.Add(post);
-        await context.SaveChangesAsync();
-        return post;
+            Models.Post post = new()
+            {
+                UserId = 1,  // Needs to be set via auth
+                Body = postData.Body,
+                ParentId = postData.ParentId,
+                Status = postData.Status ?? 0,
+                CreatedAt = DateTime.Now,
+            };
+            context.Posts.Add(post);
+            await context.SaveChangesAsync();
+            return post;
+    }
+        catch (Exception ex)
+        {
+            string message = ex switch
+            {
+                DbUpdateException => ex.InnerException?.Message!,
+                _ => ex.Message
+            };
+
+            throw new BadHttpRequestException(message, StatusCodes.Status400BadRequest);
+}
     }
 
     public static async Task<Models.Post[]> GetPosts(
@@ -47,13 +62,11 @@ public static class Post
 
     public static async Task<Models.Post> GetPost(ApplicationDbContext context, int id)
     {
-
-        // Task<ActionResult<RestDTO<Domain[]>>>
-
         var post = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
         if (post == null)
         {
-            throw new BadHttpRequestException($"Post with ID {id} Not Found", StatusCodes.Status404NotFound);
+            throw new BadHttpRequestException(
+                $"Post with ID {id} Not Found", StatusCodes.Status404NotFound);
         }
         return post;
     }

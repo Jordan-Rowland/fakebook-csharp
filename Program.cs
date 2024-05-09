@@ -25,9 +25,6 @@ public class Program
             options.SwaggerDoc(
                 "v1",
                 new OpenApiInfo { Title = "Fakebook", Version = "v1.0" });
-            //options.SwaggerDoc(
-            //    "v2",
-            //    new OpenApiInfo { Title = "Fakebook", Version = "v2.0" });
         });
         builder.Services.AddCors(options =>
         {
@@ -66,10 +63,9 @@ public class Program
 
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-        //builder.Services.Configure<ApiBehaviorOptions>(  // For custom modelState validator logic
-        //    options => options.SuppressModelStateInvalidFilter = true);
-
+        
+        //builder.Services.AddProblemDetails();
+        
         var app = builder.Build();
 
         if (app.Configuration.GetValue<bool>("UseSwagger"))
@@ -80,48 +76,89 @@ public class Program
                 options.SwaggerEndpoint(
                     $"/swagger/v1/swagger.json",
                     $"Fakebook v1");
-                //options.SwaggerEndpoint(
-                //    $"/swagger/v2/swagger.json",
-                //    $"Fakebook v2");
             });
         }
 
         if (app.Configuration.GetValue<bool>("UseDeveloperExceptionPage"))
             app.UseDeveloperExceptionPage();
         else
-            app.UseExceptionHandler("/error");
+            app.UseExceptionHandler(action =>
+            {
+                action.Run(async context =>
+                {
+                    var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
+
+                    Debug.WriteLine($"{exceptionHandler.Error.InnerException}");
+
+                    int statusCode = 404;
+                    if (exceptionHandler != null && exceptionHandler.Error is BadHttpRequestException)
+                        statusCode = (exceptionHandler?.Error as BadHttpRequestException)!.StatusCode;
+                    context.Response.StatusCode = statusCode;
+
+                    // TODO: logging, etc
+                    ProblemDetails details = new()
+                    {
+                        Detail = exceptionHandler!.Error.Message,
+                        Status = statusCode,
+                    };
+                    details.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
+                    await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(details));
+                });
+            });
 
         app.UseHttpsRedirection();
         app.UseCors();
         app.UseAuthorization();
 
-        app.MapGet("/error",
-            [ApiVersion("1.0")]
-        [EnableCors("AnyOrigin")]
-        [ResponseCache(NoStore = true)]
-        (HttpContext context) =>
-            {
-                var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
+        #region old error handling
+        //app.MapGet("/error",
+        //    [ApiVersion("1.0")]
+        //    [EnableCors("AnyOrigin")]
+        //    [ResponseCache(NoStore = true)]
+        //    (HttpContext context) =>
+        //    {
+        //        var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
 
-                // TODO: logging, etc
-                ProblemDetails details = new()
-                {
-                    Detail = exceptionHandler!.Error.Message,
-                    Status = (exceptionHandler.Error as BadHttpRequestException)?.StatusCode,
-                };
-                details.Extensions["traceId"] =
-                    Activity.Current?.Id ?? context.TraceIdentifier;
-                return Results.Problem(details);
-            });
+        //        // TODO: logging, etc
+        //        ProblemDetails details = new()
+        //        {
+        //            Detail = exceptionHandler!.Error.Message,
+        //            Status = (exceptionHandler.Error as BadHttpRequestException)?.StatusCode,
+        //        };
+        //        details.Extensions["traceId"] =
+        //            Activity.Current?.Id ?? context.TraceIdentifier;
+        //        return Results.Problem(details);
+        //    });
+
+        //app.MapPost("/error",
+        //    [ApiVersion("1.0")]
+        //    [EnableCors("AnyOrigin")]
+        //    [ResponseCache(NoStore = true)]
+        //    (HttpContext context) =>
+        //    {
+        //        var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
+
+        //        // TODO: logging, etc
+        //        ProblemDetails details = new()
+        //        {
+        //            Detail = exceptionHandler!.Error.Message,
+        //            Status = (exceptionHandler.Error as BadHttpRequestException)?.StatusCode,
+        //        };
+        //        details.Extensions["traceId"] =
+        //            Activity.Current?.Id ?? context.TraceIdentifier;
+        //        return Results.Problem(details);
+        //    });
+        #endregion
 
         app.MapGet("/error/test",
             [ApiVersion("1.0")]
-        [EnableCors("AnyOrigin_GetOnly")]
-        [ResponseCache(NoStore = true)] () =>
+            [EnableCors("AnyOrigin_GetOnly")]
+            [ResponseCache(NoStore = true)] () =>
                 { throw new BadHttpRequestException("test", StatusCodes.Status412PreconditionFailed); });
 
         app.MapControllers();
 
         app.Run();
+
     }
 }
