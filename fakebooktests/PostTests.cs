@@ -1,16 +1,10 @@
-using fakebook.Controllers.v1;
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
-using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Options;
-using System.Diagnostics;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Xunit.Abstractions;
 
 namespace fakebooktests;
@@ -77,15 +71,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
             .AddUser()
                 .AddPost();
 
-
-        var posts = await Context.Posts.ToListAsync();
-
-        foreach (var post in posts)
-        {
-            Output.WriteLine(post.Body.ToString());
-        }
-
-
         var response = await Client.GetAsync("/v1/posts/3");
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
@@ -129,8 +114,8 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO[]>>())!.Data;
-        Assert.True(data.Length == 4);
-        Assert.True(data[0].UserId == 3);
+        Assert.Equal(4, data.Length);
+        Assert.Equal(3, data[0].UserId);
     }
 
     [Fact]

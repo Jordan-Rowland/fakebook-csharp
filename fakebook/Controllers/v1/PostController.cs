@@ -1,12 +1,10 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 using fakebook.DTO.v1;
 using fakebook.Models;
 using PostService = fakebook.Services.v1.Post;
 using fakebook.DTO.v1.Post;
-using System.Diagnostics;
 
 
 namespace fakebook.Controllers.v1;
@@ -19,14 +17,11 @@ public class PostController(
     [HttpPost]
     // https://code-maze.com/swagger-ui-asp-net-core-web-api/
     [ProducesResponseType(201)]
-    [ProducesResponseType(422)]
+    [ProducesResponseType(422)]  // Need to implement validation 
     [ProducesResponseType(400)]
-    // Probably need 422 responses
     [ResponseCache(NoStore = true)]
     public async Task<RestDataDTO<PostResponseDTO>> Post(PostNewDTO postData)
     {
-        // Where there was no user and I tried to make a post, I got a DB crash,
-        // But it didn't throw a good error. Figure out why
         var post = await PostService.CreatePost(context, postData);
         return new() { Data = PostResponseDTO.Dump(post) };
     }
