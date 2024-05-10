@@ -6,7 +6,6 @@ using Xunit.Abstractions;
 namespace fakebooktests;
 internal class TestBuilder(ApplicationDbContext db, ITestOutputHelper output)
 {
-    //public ApplicationDbContext db { get; set; }
     public int UserId { get; set; }
     public int PostId { get; set; }
 
@@ -26,14 +25,14 @@ internal class TestBuilder(ApplicationDbContext db, ITestOutputHelper output)
         return this;
     }
 
-    public TestBuilder AddPost(params string[] args)
+    public TestBuilder AddPost(string? body = null, int? userId = null, PostStatus? status = null)
     {
         var post = new Post()
         {
-            Body = $"Builder Post {PostId + 1}",
-            UserId = UserId,
+            Body = body ?? $"Builder Post {PostId + 1}",
+            UserId = userId ?? UserId,
             CreatedAt = DateTime.Now,
-            Status = 0,
+            Status = status ?? PostStatus.Published,
         };
         db.Add(post);
         db.SaveChanges();

@@ -26,4 +26,4 @@ public class Post
     public ICollection<Post> Replies { get; set; }
 }
 
-public enum PostStatus { Publised, Draft, Deleted }
+public enum PostStatus { Published, Draft, Deleted }

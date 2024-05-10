@@ -6,10 +6,5 @@ namespace fakebook.DTO.v1.Post;
 
 public class PostNewDTO : PostUpdateDTO
 {
-    public int? Id { get; set; }
-
-    [StringLength(400)]
-    [Required]
-    public string Body { get; set; }
     public int? ParentId { get; set; }
 }

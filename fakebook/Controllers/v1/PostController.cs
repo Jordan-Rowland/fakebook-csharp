@@ -28,9 +28,11 @@ public class PostController(
         // Where there was no user and I tried to make a post, I got a DB crash,
         // But it didn't throw a good error. Figure out why
         var post = await PostService.CreatePost(context, postData);
-        return new RestDataDTO<PostResponseDTO> { Data = PostResponseDTO.Dump(post) };
+        return new() { Data = PostResponseDTO.Dump(post) };
     }
 
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
     [HttpGet]
     public async Task<RestDataDTO<PostResponseDTO[]>> GetPosts([FromQuery] PagingDTO paging)
     {
@@ -46,46 +48,31 @@ public class PostController(
         };
     }
 
+    [ProducesResponseType(200)]
+    [ProducesResponseType(404)]
     [HttpGet("{id}")]
     public async Task<RestDataDTO<PostResponseDTO>> GetPost(int id)
     {
         var post = await PostService.GetPost(context, id);
-        return new RestDataDTO<PostResponseDTO> { Data = PostResponseDTO.Dump(post) };
+        return new() { Data = PostResponseDTO.Dump(post) };
     }
 
-    //// TODO: Fill this in
-    //[ProducesResponseType(422)]
-    //[HttpPut("{id}")]
-    //[ResponseCache(NoStore = true)]
-    //public async Task<RestResponseDTO<Post?>> Put(PostUpdateDTO postData)
-    //{
-    //    // Test accessing User from Post, post.User
-
-    //    Post post = new()
-    //    {
-    //        UserId = 2,  // Needs to be set via auth
-    //        Body = postData.Body,
-    //        ParentId = postData.ParentId,
-    //        Status = postData.Status ?? 0,
-    //        CreatedAt = DateTime.Now,  // Update the updatedAt variable, not created
-    //    };
-
-    //    context.Posts.Update(post);
-    //    await context.SaveChangesAsync();
-
-    //    // Figure out 
-    //    return new RestResponseDTO<Models.Post?>
-    //    {
-    //        Data = post
-    //    };
-    //}
-
-    [HttpDelete("{id}")]
-    public async Task<Models.Post> Delete(int id)
+    [ProducesResponseType(200)]
+    [ProducesResponseType(422)]
+    [HttpPut("{id}")]
+    [ResponseCache(NoStore = true)]
+    public async Task<RestDataDTO<PostResponseDTO>> Put(int id, PostUpdateDTO postData)
     {
-        var query = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
-        // Update DeletedAt and Status
-        return query;
+        var post = await PostService.UpdatePost(context, id, postData);
+        return new() { Data = PostResponseDTO.Dump(post) };
     }
 
+    [ProducesResponseType(204)]
+    [HttpDelete("{id}")]
+    public async Task<RestDataDTO<DateTime>> Delete(int id)
+    {
+        var post = await PostService.DeletePost(context, id);
+        HttpContext.Response.StatusCode = 204;
+        return new() { Data = (DateTime)post.DeletedAt! };
+    }
 }

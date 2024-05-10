@@ -71,11 +71,27 @@ public static class Post
         return post;
     }
 
-    public static async Task<Models.Post> UpdatePost(ApplicationDbContext context, int id, PostUpdateDTO postData)
+    public static async Task<Models.Post> UpdatePost(
+        ApplicationDbContext context, int id, PostUpdateDTO postData)
     {
         var post = await GetPost(context, id);
+        if (post.Status != PostStatus.Draft)
+        {
+            throw new BadHttpRequestException(
+                $"Cannot update a PUBLISHED post.", StatusCodes.Status422UnprocessableEntity);
+        }
         post.Body = postData.Body;
         post.Status = postData.Status ?? post.Status;
+        context.Posts.Update(post);
+        await context.SaveChangesAsync();
+        return post;
+    }
+
+    public static async Task<Models.Post> DeletePost(ApplicationDbContext context, int id)
+    {
+        var post = await GetPost(context, id);
+        post.DeletedAt = DateTime.Now;
+        post.Status = PostStatus.Deleted;
         context.Posts.Update(post);
         await context.SaveChangesAsync();
         return post;
