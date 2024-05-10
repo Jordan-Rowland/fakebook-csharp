@@ -62,7 +62,11 @@ public static class Post
 
     public static async Task<Models.Post> GetPost(ApplicationDbContext context, int id)
     {
-        var post = await context.Posts.Where(p => p.Id == id).FirstOrDefaultAsync();
+        var post = await context.Posts
+            .Where(p => p.Id == id && p.Status != PostStatus.Deleted)
+            //.Where(p => p.Status != PostStatus.Deleted)
+            .FirstOrDefaultAsync();
+
         if (post == null)
         {
             throw new BadHttpRequestException(
@@ -90,8 +94,8 @@ public static class Post
     public static async Task<Models.Post> DeletePost(ApplicationDbContext context, int id)
     {
         var post = await GetPost(context, id);
-        post.DeletedAt = DateTime.Now;
         post.Status = PostStatus.Deleted;
+        post.DeletedAt = DateTime.Now;
         context.Posts.Update(post);
         await context.SaveChangesAsync();
         return post;

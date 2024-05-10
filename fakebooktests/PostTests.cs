@@ -71,7 +71,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
             .AddUser()
                 .AddPost();
 
-        var response = await Client.GetAsync("/v1/posts/3");
+        var response = await Client.GetAsync($"/v1/posts/{builder.PostId}");
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
@@ -80,7 +80,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_GetPost404Error()
+    public async Task Test_GetNonexistentPost404Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -91,7 +91,24 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         var response = await Client.GetAsync("/v1/posts/3");
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
-       
+    }
+
+    [Fact]
+    public async Task Test_GetDeletedPost404Error()
+    {
+        using var scope = Factory.Services.CreateScope();
+        Context = GetScopedContext(scope);
+        TestBuilder builder = new(Context, Output);
+
+        builder.AddUser();
+        // Need to add this after building a user so UserId is set properly
+        var builderPost = builder.GetBuilderPost();
+        builderPost.Status = PostStatus.Deleted;
+        builder.AddPost(builderPost);
+
+        var response = await Client.GetAsync($"/v1/posts/{builderPost.Id}");
+        Assert.NotNull(response);
+        Assert.Equal(404, (int)response.StatusCode);
     }
 
     [Fact]
@@ -125,18 +142,19 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
 
-        builder.AddUser().AddPost(status: PostStatus.Draft);
+        builder.AddUser();
+        // Need to add this after building a user so UserId is set properly
+        var builderPost = builder.GetBuilderPost();
+        builderPost.Status = PostStatus.Draft;
+        builder.AddPost(builderPost);
 
-        Dictionary<string, string> putData = new()
-        {
-            {"body", "This is an updated post"},
-        };
+        Dictionary<string, string> putData = new() { { "body", "Updated" } };
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
         Assert.Equal(1, data.Id);
-        Assert.Equal("This is an updated post", data.Body);
+        Assert.Equal("Updated", data.Body);
     }
 
     [Fact]
@@ -148,13 +166,12 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
 
         builder.AddUser().AddPost();
 
-        Dictionary<string, string> putData = new()
-        {
-            {"body", "This fails because you cannot update a published post"},
-        };
+        Dictionary<string, string> putData = new() { {"body", "Updated"} };
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
         Assert.NotNull(response);
         Assert.Equal(422, (int)response.StatusCode);
+        var responseString = await response.Content.ReadAsStringAsync();
+        Assert.Contains("Cannot update a PUBLISHED post.", responseString);
     }
 
     [Fact]
