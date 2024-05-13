@@ -1,4 +1,6 @@
-﻿namespace fakebook.DTO.v1.Post;
+﻿using fakebook.Models;
+
+namespace fakebook.DTO.v1.Post;
 
 public class PostResponseDTO : PostNewDTO
 {
@@ -14,7 +16,7 @@ public class PostResponseDTO : PostNewDTO
             Id = postModel.Id,
             Body = postModel.Body,
             ParentId = postModel.ParentId,
-            Status = postModel.Status,
+            Status = postModel.Status.ToString("G"),
             CreatedAt = postModel.CreatedAt,
             UserId = postModel.UserId,
         };

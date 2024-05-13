@@ -15,12 +15,14 @@ public static class Post
         // Try and except block and throw a meaningful error!
         try
         {
+            PostStatus status = PostStatus.Published;
+            _ = Enum.TryParse(postData.Status, out status);
             Models.Post post = new()
             {
                 UserId = 1,  // Needs to be set via auth
                 Body = postData.Body,
                 ParentId = postData.ParentId,
-                Status = postData.Status ?? 0,
+                Status = status,
                 CreatedAt = DateTime.Now,
             };
             context.Posts.Add(post);
@@ -64,7 +66,6 @@ public static class Post
     {
         var post = await context.Posts
             .Where(p => p.Id == id && p.Status != PostStatus.Deleted)
-            //.Where(p => p.Status != PostStatus.Deleted)
             .FirstOrDefaultAsync();
 
         if (post == null)
@@ -84,8 +85,10 @@ public static class Post
             throw new BadHttpRequestException(
                 $"Cannot update a PUBLISHED post.", StatusCodes.Status422UnprocessableEntity);
         }
+        PostStatus status = PostStatus.Published;
+        _ = Enum.TryParse(postData.Status ?? post.Status.ToString("G"), out status);
         post.Body = postData.Body;
-        post.Status = postData.Status ?? post.Status;
+        post.Status = status;
         context.Posts.Update(post);
         await context.SaveChangesAsync();
         return post;

@@ -24,7 +24,7 @@ internal class TestBuilder(Models.ApplicationDbContext db, ITestOutputHelper out
         return new()
         {
             Username = $"Builder User {UserId + 1}",
-            PasswordHash = "XXXXX",
+            PasswordHash = "asdfasdfqwerty",
             CreatedAt = DateTime.Now,
             LastActive = DateTime.Now,
             Status = 0,

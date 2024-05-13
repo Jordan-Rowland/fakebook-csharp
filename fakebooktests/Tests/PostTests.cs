@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using Xunit.Abstractions;
 
-namespace fakebooktests;
+namespace fakebooktests.Tests;
 
 public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
 {
@@ -20,10 +20,11 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
     {
         Factory = factory;
-        Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
-        {
-            AllowAutoRedirect = false
-        });
+        Client = Factory.CreateClient();
+        //Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
+        //{
+        //    AllowAutoRedirect = false
+        //});
         Output = output;
     }
 
@@ -37,39 +38,36 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_CreatePost()
+    public async void CreatePost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder.AddUser();
 
-        Dictionary<string, string> postData = new()
-        {
-            {"body", "This is a test post"},
-        };
+        PostNewDTO postData = new() { Body = "Test post" };
+
         var response = await Client.PostAsJsonAsync("/v1/posts", postData);
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);
+        Assert.Equal(200, (int)response.StatusCode);  // Change and test 201 status
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
+        Output.WriteLine($"{await response.Content.ReadAsStringAsync()}");
         Assert.Equal(1, data.Id);
         Assert.Equal(1, data.UserId);
+        Assert.Equal("Test post", data.Body);
+        Assert.Single(await Context.Posts.ToArrayAsync());
     }
 
     [Fact]
-    public async Task Test_GetPost()
+    public async void GetPost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
 
         builder
-            .AddUser()
-                .AddPost()
-                .AddPost()
-            .AddUser()
-                .AddPost();
+            .AddUser().AddPost().AddPost()
+            .AddUser().AddPost();
 
         var response = await Client.GetAsync($"/v1/posts/{builder.PostId}");
         Assert.NotNull(response);
@@ -80,12 +78,11 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_GetNonexistentPost404Error()
+    public async void GetNonexistentPost404Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder.AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts/3");
@@ -94,15 +91,13 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_GetDeletedPost404Error()
+    public async void GetDeletedPost404Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
 
-        builder.AddUser();
-        // Need to add this after building a user so UserId is set properly
-        var builderPost = builder.GetBuilderPost();
+        var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Deleted;
         builder.AddPost(builderPost);
 
@@ -112,43 +107,36 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_GetPosts()
+    public async void GetPosts()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
 
         builder
-            .AddUser()
-                .AddPost()
-                .AddPost()
-            .AddUser()
-                .AddPost()
-            .AddUser()
-                .AddPost();
+            .AddUser().AddPost().AddPost()
+            .AddUser().AddPost()
+            .AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts");
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO[]>>())!.Data;
+        var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
         Assert.Equal(4, data.Length);
         Assert.Equal(3, data[0].UserId);
     }
 
     [Fact]
-    public async Task Test_UpdateDraftPost()
+    public async void UpdateDraftPost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
-        builder.AddUser();
-        // Need to add this after building a user so UserId is set properly
-        var builderPost = builder.GetBuilderPost();
+        var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Draft;
         builder.AddPost(builderPost);
 
-        Dictionary<string, string> putData = new() { { "body", "Updated" } };
+        PostNewDTO putData = new() { Body = "Updated" };
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
@@ -158,15 +146,14 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_UpdatePublishedPost422Error()
+    public async void UpdatePublishedPost422Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder.AddUser().AddPost();
 
-        Dictionary<string, string> putData = new() { {"body", "Updated"} };
+        PostNewDTO putData = new() { Body = "Updated" };
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
         Assert.NotNull(response);
         Assert.Equal(422, (int)response.StatusCode);
@@ -175,12 +162,11 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async Task Test_DeletePost()
+    public async void DeletePost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder.AddUser().AddPost();
 
         var response = await Client.DeleteAsync($"/v1/posts/{builder.PostId}");
