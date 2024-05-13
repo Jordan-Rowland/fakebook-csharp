@@ -137,7 +137,9 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser();
         
         UserUpdateDTO putData = new() { Email = "Updated@email.com" };
-        var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.UserId}", putData);
+        var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
+        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
@@ -153,9 +155,14 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
-        //UserUpdateDTO putData = new() {  };
-        Dictionary<string, string> putData = new() { { "username", "UpdatedTestUser" } };
+        UserUpdateDTO putData = new()
+        {
+            ExistingPassword = "WrongP@55",
+            NewPassword = "WrongP@55!2",
+        };
         var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
+        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
+
         Assert.NotNull(response);
         Assert.Equal(422, (int)response.StatusCode);
         //var responseString = await response.Content.ReadAsStringAsync();

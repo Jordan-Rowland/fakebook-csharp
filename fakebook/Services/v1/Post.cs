@@ -80,13 +80,13 @@ public static class Post
         ApplicationDbContext context, int id, PostUpdateDTO postData)
     {
         var post = await GetPost(context, id);
-        if (post.Status != PostStatus.Draft)
+        PostStatus status = post.Status;
+        if (status != PostStatus.Draft)
         {
             throw new BadHttpRequestException(
                 $"Cannot update a PUBLISHED post.", StatusCodes.Status422UnprocessableEntity);
         }
-        PostStatus status = PostStatus.Published;
-        _ = Enum.TryParse(postData.Status ?? post.Status.ToString("G"), out status);
+        _ = Enum.TryParse(postData.Status ?? status.ToString("G"), out status);
         post.Body = postData.Body;
         post.Status = status;
         context.Posts.Update(post);

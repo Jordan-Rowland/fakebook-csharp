@@ -69,6 +69,6 @@ public class UserController(
     {
         var user = await UserService.DeleteUser(context, id);
         HttpContext.Response.StatusCode = 204;
-        return new() { Data = (DateTime)user.DeletedAt! };
+        return new() { Data = (DateTime)user.LastActive! };
     }
 }

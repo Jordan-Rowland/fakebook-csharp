@@ -12,5 +12,5 @@ public class UserUpdateDTO
     public string? Location { get; set; }
     public string? Photo { get; set; }
     public string? About { get; set; }
-    public UserStatus? Status { get; set; }
+    public string? Status { get; set; }
 }
