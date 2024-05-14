@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("fakebooktests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+83f090172ce1e7056f2f2caad0adb61d9d2bb8e0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c671786bbfc2bf08fd362368c95b233d53a1b265")]
 [assembly: System.Reflection.AssemblyProductAttribute("fakebooktests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("fakebooktests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

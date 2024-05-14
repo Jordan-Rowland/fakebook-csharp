@@ -90,7 +90,7 @@ public class User
             else
             {
                 throw new BadHttpRequestException(
-                    $"Existing password does not match. Password cannot be updated",
+                    $"Existing password does not match. Password cannot be updated.",
                     StatusCodes.Status422UnprocessableEntity
                 );
             }

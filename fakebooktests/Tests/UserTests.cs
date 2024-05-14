@@ -20,10 +20,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     {
         Factory = factory;
         Client = Factory.CreateClient();
-        //Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
-        //{
-        //    AllowAutoRedirect = false
-        //});
         Output = output;
     }
 
@@ -54,8 +50,8 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
             Photo = "photo.png",
             About = "B.S. Software Engineering",
         };
-
         var response = await Client.PostAsJsonAsync("/v1/users", postData);
+        
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
@@ -71,14 +67,13 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder.AddUser();
 
         var response = await Client.GetAsync($"/v1/users/{builder.UserId}");
+        
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
         Assert.Equal($"Builder User 1", data.Username);
     }
 
@@ -91,6 +86,7 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser();
 
         var response = await Client.GetAsync("/v1/users/2");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
@@ -101,12 +97,12 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         var builderUser = builder.GetBuilderUser();
         builderUser.Status = UserStatus.Deleted;
         builder.AddUser(builderUser);
 
         var response = await Client.GetAsync($"/v1/users/{builderUser.Id}");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
@@ -117,11 +113,11 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder
             .AddUser().AddUser().AddUser().AddUser();
 
         var response = await Client.GetAsync("/v1/users");
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO[]>>())!.Data;
@@ -138,7 +134,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         
         UserUpdateDTO putData = new() { Email = "Updated@email.com" };
         var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
-        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
 
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
@@ -161,12 +156,14 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
             NewPassword = "WrongP@55!2",
         };
         var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
-        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
 
         Assert.NotNull(response);
         Assert.Equal(422, (int)response.StatusCode);
-        //var responseString = await response.Content.ReadAsStringAsync();
-        //Assert.Contains("Cannot update a PUBLISHED post.", responseString);
+        var responseString = await response.Content.ReadAsStringAsync();
+        Assert.Contains(
+            "Existing password does not match. Password cannot be updated.",
+            responseString
+        );
     }
 
     [Fact]
@@ -178,6 +175,7 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser();
 
         var response = await Client.DeleteAsync($"/v1/users/{builder.UserId}");
+        
         Assert.NotNull(response);
         Assert.Equal(204, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<DateTime>>())!.Data;

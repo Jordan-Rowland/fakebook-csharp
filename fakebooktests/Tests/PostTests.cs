@@ -1,11 +1,11 @@
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using Xunit.Abstractions;
+
 
 namespace fakebooktests.Tests;
 
@@ -21,10 +21,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     {
         Factory = factory;
         Client = Factory.CreateClient();
-        //Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
-        //{
-        //    AllowAutoRedirect = false
-        //});
         Output = output;
     }
 
@@ -64,12 +60,12 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder
             .AddUser().AddPost().AddPost()
             .AddUser().AddPost();
 
         var response = await Client.GetAsync($"/v1/posts/{builder.PostId}");
+        
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
@@ -86,6 +82,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts/3");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
@@ -96,12 +93,12 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Deleted;
         builder.AddPost(builderPost);
 
         var response = await Client.GetAsync($"/v1/posts/{builderPost.Id}");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
@@ -112,13 +109,13 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder
             .AddUser().AddPost().AddPost()
             .AddUser().AddPost()
             .AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts");
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
@@ -138,6 +135,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
 
         PostNewDTO putData = new() { Body = "Updated" };
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
@@ -154,6 +152,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser().AddPost();
 
         PostNewDTO putData = new() { Body = "Updated" };
+
         var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
         Assert.NotNull(response);
         Assert.Equal(422, (int)response.StatusCode);
@@ -170,6 +169,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         builder.AddUser().AddPost();
 
         var response = await Client.DeleteAsync($"/v1/posts/{builder.PostId}");
+
         Assert.NotNull(response);
         Assert.Equal(204, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<DateTime>>())!.Data;
