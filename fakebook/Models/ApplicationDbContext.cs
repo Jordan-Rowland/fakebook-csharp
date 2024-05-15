@@ -1,10 +1,12 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 
 
 namespace fakebook.Models;
 
 public class ApplicationDbContext(
-    DbContextOptions<ApplicationDbContext> options) : DbContext(options)
+    DbContextOptions<ApplicationDbContext> options) : IdentityDbContext<User, ApplicationRole, int>(options)
 {
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -27,5 +29,10 @@ public class ApplicationDbContext(
     }
 
     public DbSet<Post> Posts => Set<Post>();
-    public DbSet<User> Users => Set<User>();
+    //public DbSet<User> Users => Set<User>();
 }
+
+public class ApplicationRole : IdentityRole<int>
+{
+}
+

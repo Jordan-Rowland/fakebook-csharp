@@ -31,6 +31,7 @@ public class PostController(
     [HttpGet]
     public async Task<RestDataDTO<PostResponseDTO[]>> GetPosts([FromQuery] PagingDTO paging)
     {
+        logger.LogInformation("Get Method stated");
         var results = (await PostService.GetPosts(context, paging))
             .Select(PostResponseDTO.Dump).ToArray();
         return new RestResponseDTO<PostResponseDTO[]>

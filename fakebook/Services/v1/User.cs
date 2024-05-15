@@ -15,7 +15,7 @@ public class User
         DateTime Now = DateTime.Now;
         Models.User user = new()
         {
-            Username = postData.Username,
+            UserName = postData.UserName,
             PasswordHash = postData.Password,  // Hash the password
             CreatedAt = Now,
             LastActive = Now,
@@ -66,7 +66,7 @@ public class User
         if (paging != null)
         {
             if (!string.IsNullOrEmpty(paging.Q))
-                query = query.Where(p => p.Username.Contains(paging.Q));
+                query = query.Where(p => p.UserName.Contains(paging.Q));
             query = query
                 .Skip(paging.PageIndex * paging.PageSize)
                 .Take(paging.PageSize);

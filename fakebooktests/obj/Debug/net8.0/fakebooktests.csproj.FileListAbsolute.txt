@@ -1,6 +1,5 @@
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\testhost.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\testhost.exe
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.runner.visualstudio.dotnetcore.testadapter.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.runner.reporters.netcoreapp10.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.runner.utility.netcoreapp10.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\fakebooktests.deps.json
@@ -16,7 +15,6 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Micr
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.TestPlatform.Utilities.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.VisualStudio.TestPlatform.Common.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Newtonsoft.Json.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\NuGet.Frameworks.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.abstractions.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.assert.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.core.dll
@@ -170,8 +168,6 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Connections.Abstractions.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.CookiePolicy.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Cors.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Cryptography.Internal.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.DataProtection.Abstractions.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.DataProtection.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.DataProtection.Extensions.dll
@@ -267,8 +263,6 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Hosting.Abstractions.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Hosting.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Http.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Core.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Stores.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Localization.Abstractions.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Localization.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Logging.Abstractions.dll
@@ -459,8 +453,17 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Micr
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\obj\Debug\net8.0\MvcTestingAppManifest.json
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.Data.Sqlite.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.EntityFrameworkCore.Sqlite.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\SQLitePCLRaw.batteries_v2.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\SQLitePCLRaw.core.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\obj\Debug\net8.0\fakebooktests.sourcelink.json
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\xunit.runner.visualstudio.testadapter.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.AspNetCore.Cryptography.Internal.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.Extensions.Identity.Core.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.Extensions.Identity.Stores.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\SQLitePCLRaw.batteries_v2.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\SQLitePCLRaw.provider.e_sqlite3.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\browser-wasm\nativeassets\net8.0\e_sqlite3.a
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\linux-arm\native\libe_sqlite3.so
@@ -482,4 +485,3 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runt
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\win-arm64\native\e_sqlite3.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\win-x64\native\e_sqlite3.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\win-x86\native\e_sqlite3.dll
-C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\obj\Debug\net8.0\fakebooktests.sourcelink.json

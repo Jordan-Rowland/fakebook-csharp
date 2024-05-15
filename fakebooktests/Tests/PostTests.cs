@@ -34,7 +34,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void CreatePost()
+    public async Task CreatePost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -55,7 +55,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void GetPost()
+    public async Task GetPost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -74,7 +74,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void GetNonexistentPost404Error()
+    public async Task GetNonexistentPost404Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -88,7 +88,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void GetDeletedPost404Error()
+    public async Task GetDeletedPost404Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -104,7 +104,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void GetPosts()
+    public async Task GetPosts()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -124,7 +124,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void UpdateDraftPost()
+    public async Task UpdateDraftPost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -144,7 +144,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void UpdatePublishedPost422Error()
+    public async Task UpdatePublishedPost422Error()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
@@ -161,7 +161,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void DeletePost()
+    public async Task DeletePost()
     {
         using var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);

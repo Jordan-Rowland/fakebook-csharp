@@ -7,7 +7,7 @@ public class UserNewDTO : UserUpdateDTO
 {
     [Required]
     [MaxLength(32)]
-    public required string Username { get; set; }
+    public required string UserName { get; set; }
     [Required]
     public required string Password { get; set; }
 }

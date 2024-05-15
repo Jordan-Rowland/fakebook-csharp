@@ -18,7 +18,7 @@ public class Seeding
         return [
             new() {
                 //Id = 1,
-                Username = "TestUser1",
+                UserName = "TestUser1",
                 PasswordHash = "sdfsdf",
                 CreatedAt = DateTime.Now,
                 LastActive = DateTime.Now,
@@ -26,7 +26,7 @@ public class Seeding
             },
             new() {
                 //Id = 2,
-                Username = "TestUse2",
+                UserName = "TestUse2",
                 PasswordHash = "sdfsdf",
                 CreatedAt = DateTime.Now,
                 LastActive = DateTime.Now,
@@ -34,7 +34,7 @@ public class Seeding
             },
             new() {
                 //Id = 3,
-                Username = "TestUser3",
+                UserName = "TestUser3",
                 PasswordHash = "sdfsdf",
                 CreatedAt = DateTime.Now,
                 LastActive = DateTime.Now,

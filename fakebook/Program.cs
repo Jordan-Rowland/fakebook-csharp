@@ -88,8 +88,6 @@ public class Program
                 {
                     var exceptionHandler = context.Features.Get<IExceptionHandlerPathFeature>();
 
-                    Debug.WriteLine($"{exceptionHandler.Error.InnerException}");
-
                     int statusCode = 404;
                     if (exceptionHandler != null && exceptionHandler.Error is BadHttpRequestException)
                         statusCode = (exceptionHandler?.Error as BadHttpRequestException)!.StatusCode;
@@ -102,6 +100,12 @@ public class Program
                         Status = statusCode,
                     };
                     details.Extensions["traceId"] = Activity.Current?.Id ?? context.TraceIdentifier;
+
+                    app.Logger.LogError(
+                        exceptionHandler?.Error,
+                        "An unhandled exception occurred."
+                    );
+
                     await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(details));
                 });
             });
