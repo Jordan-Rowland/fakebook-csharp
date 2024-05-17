@@ -4,19 +4,19 @@ using fakebook.DTO.v1.User;
 using fakebook.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace fakebook.Services.v1;
 
 public class User
 {
     public static async Task<Models.User> CreateUser(
-        ApplicationDbContext context, UserNewDTO postData)
+        ApplicationDbContext context, UserNewDTO postData, UserManager<Models.User> userManager)
     {
         DateTime Now = DateTime.Now;
         Models.User user = new()
         {
             UserName = postData.UserName,
-            PasswordHash = postData.Password,  // Hash the password
             CreatedAt = Now,
             LastActive = Now,
             Email = postData.Email,
@@ -28,18 +28,15 @@ public class User
             Status = UserStatus.Public,
         };
 
-        //{
-        //    Username = "Joroloro123",
-        //    PasswordHash = "blablablah",
-        //    CreatedAt = DateTime.Now,
-        //    LastActive = DateTime.Now,
-        //    Status = 0,
-        //};
-
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
+        await userManager.CreateAsync(user, postData.Password);
         return user;
     }
+
+    //public static async Task<Models.User> LoginUser(
+    //    ApplicationDbContext context, UserNewDTO postData)
+    //{
+    //    DateTime Now = DateTime.Now;
+    //}
 
     internal static async Task<Models.User> GetUser(ApplicationDbContext context, int id)
     {

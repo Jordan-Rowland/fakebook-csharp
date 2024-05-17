@@ -14,7 +14,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     private CustomWebApplicationFactory<Program> Factory { get; set; }
     private HttpClient Client { get; set; }
     private ITestOutputHelper Output { get; set; }
-    private ApplicationDbContext? Context { get; set; }
+    private ApplicationDbContext Context { get; set; }
 
     public PostTests(
         CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
@@ -22,6 +22,8 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
         Factory = factory;
         Client = Factory.CreateClient();
         Output = output;
+        var scope = Factory.Services.CreateScope();
+        Context = GetScopedContext(scope);
     }
 
     private ApplicationDbContext GetScopedContext(IServiceScope scope)
@@ -36,8 +38,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task CreatePost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
@@ -45,7 +45,7 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
 
         var response = await Client.PostAsJsonAsync("/v1/posts", postData);
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);  // Change and test 201 status
+        Assert.Equal(201, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
         Output.WriteLine($"{await response.Content.ReadAsStringAsync()}");
         Assert.Equal(1, data.Id);
@@ -57,8 +57,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetPost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder
             .AddUser().AddPost().AddPost()
@@ -76,8 +74,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetNonexistentPost404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
 
@@ -90,8 +86,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetDeletedPost404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Deleted;
@@ -106,8 +100,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetPosts()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder
             .AddUser().AddPost().AddPost()
@@ -126,8 +118,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task UpdateDraftPost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Draft;
@@ -146,8 +136,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task UpdatePublishedPost422Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
 
@@ -163,8 +151,6 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task DeletePost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
 

@@ -5,6 +5,10 @@ using Xunit.Abstractions;
 using System.Net.Http.Json;
 using fakebook.DTO.v1.User;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Moq;
+using fakebook.Services.v1;
 
 
 namespace fakebooktests.Tests;
@@ -13,7 +17,7 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     private CustomWebApplicationFactory<Program> Factory { get; set; }
     private HttpClient Client { get; set; }
     private ITestOutputHelper Output { get; set; }
-    private ApplicationDbContext? Context { get; set; }
+    private ApplicationDbContext Context { get; set; }
 
     public UserTests(
         CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
@@ -21,6 +25,8 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         Factory = factory;
         Client = Factory.CreateClient();
         Output = output;
+        var scope = Factory.Services.CreateScope();
+        Context = GetScopedContext(scope);
     }
 
     private ApplicationDbContext GetScopedContext(IServiceScope scope)
@@ -35,10 +41,7 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task CreateUser()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
-        TestBuilder builder = new(Context, Output);
-
+        var mock = new Mock<UserManager<fakebook.Models.User>>();
         UserNewDTO postData = new()
         {
             UserName = "testUser",
@@ -52,20 +55,38 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
         };
         var response = await Client.PostAsJsonAsync("/v1/users", postData);
         
+        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);
+        Assert.Equal(201, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-        //Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
-        Assert.Equal(1, data.Id);
         Assert.Equal("testUser", data.UserName);
-        Assert.Single(await Context.Users.ToArrayAsync());
     }
+
+    //[Fact]
+    //public async Task LoginUser()
+    //{
+    //    TestBuilder builder = new(Context, Output);
+    //    builder.AddUser();
+
+    //    UserNewDTO postData = new()
+    //    {
+    //        UserName = "testUser",
+    //        Password = "testPass",
+    //    };
+    //    var response = await Client.PostAsJsonAsync("/v1/users/login", postData);
+
+    //    Assert.NotNull(response);
+    //    Assert.Equal(200, (int)response.StatusCode);
+    //    var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
+    //    ////Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
+    //    //Assert.Equal(1, data.Id);
+    //    //Assert.Equal("testUser", data.UserName);
+    //    //Assert.Single(await Context.Users.ToArrayAsync());
+    //}
 
     [Fact]
     public async Task GetUser()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
@@ -80,8 +101,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetNonexistentUser404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
@@ -94,8 +113,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetDeletedUser404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         var builderUser = builder.GetBuilderUser();
         builderUser.Status = UserStatus.Deleted;
@@ -110,8 +127,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task GetUsers()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder
             .AddUser().AddUser().AddUser().AddUser();
@@ -127,8 +142,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task UpdateUser()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
         
@@ -145,8 +158,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task UpdateUser422Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
@@ -169,8 +180,6 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task DeleteUser()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 

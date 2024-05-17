@@ -1,5 +1,7 @@
 ﻿using fakebook.Models;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -42,6 +44,7 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
                 options.UseSqlite(connection);
             });
         });
+
 
         builder.UseEnvironment("Development");
     }

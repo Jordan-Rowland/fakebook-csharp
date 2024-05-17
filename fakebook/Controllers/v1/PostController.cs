@@ -5,6 +5,8 @@ using fakebook.DTO.v1;
 using fakebook.Models;
 using PostService = fakebook.Services.v1.Post;
 using fakebook.DTO.v1.Post;
+using fakebook.DTO.v1.User;
+using fakebook.Services.v1;
 
 
 namespace fakebook.Controllers.v1;
@@ -23,7 +25,11 @@ public class PostController(
     public async Task<RestDataDTO<PostResponseDTO>> Post(PostNewDTO postData)
     {
         var post = await PostService.CreatePost(context, postData);
-        return new() { Data = PostResponseDTO.Dump(post) };
+        return ControllerHelper.ReturnDataWithStatusCode(
+            new RestDataDTO<PostResponseDTO>() { Data = PostResponseDTO.Dump(post) },
+            statusCode: 201,
+            HttpContext
+        );
     }
 
     [ProducesResponseType(200)]
@@ -68,7 +74,10 @@ public class PostController(
     public async Task<RestDataDTO<DateTime>> Delete(int id)
     {
         var post = await PostService.DeletePost(context, id);
-        HttpContext.Response.StatusCode = 204;
-        return new() { Data = (DateTime)post.DeletedAt! };
+        return ControllerHelper.ReturnDataWithStatusCode(
+            new RestDataDTO<DateTime>() { Data = (DateTime)post.DeletedAt! },
+            statusCode: 204,
+            HttpContext
+        );
     }
 }
