@@ -1,40 +1,19 @@
-using fakebook.DTO.v1;
-using fakebook.DTO.v1.Post;
-using fakebook.Models;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using Xunit.Abstractions;
 
+using fakebook.DTO.v1;
+using fakebook.DTO.v1.Post;
+using fakebook.Models;
+
+
 
 namespace fakebooktests.Tests;
-
-public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
+public class PostTests(
+    CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
+    : BaseTestClass(factory, output)
 {
-    private CustomWebApplicationFactory<Program> Factory { get; set; }
-    private HttpClient Client { get; set; }
-    private ITestOutputHelper Output { get; set; }
-    private ApplicationDbContext Context { get; set; }
-
-    public PostTests(
-        CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
-    {
-        Factory = factory;
-        Client = Factory.CreateClient();
-        Output = output;
-        var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
-    }
-
-    private ApplicationDbContext GetScopedContext(IServiceScope scope)
-    {
-        var scopedServices = scope.ServiceProvider;
-        Context = scopedServices.GetRequiredService<ApplicationDbContext>();
-        Context.Database.EnsureDeleted();
-        Context.Database.EnsureCreated();
-        return Context;
-    }
-
     [Fact]
     public async Task CreatePost()
     {

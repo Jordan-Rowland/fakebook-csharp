@@ -1,59 +1,33 @@
-﻿using fakebook.DTO.v1;
-using fakebook.Models;
-using UserModel = fakebook.Models.User;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 using System.Net.Http.Json;
-using fakebook.DTO.v1.User;
 using Microsoft.AspNetCore.Identity;
 using Moq;
-using UserService = fakebook.Services.v1.User;
 using Microsoft.Extensions.Configuration;
+
+using fakebook.DTO.v1;
+using fakebook.DTO.v1.User;
+using fakebook.Models;
+using UserModel = fakebook.Models.User;
+using UserService = fakebook.Services.v1.User;
 
 
 namespace fakebooktests.Tests;
-public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
+public class UserTests(
+    CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
+    : BaseTestClass(factory, output)
 {
-    private CustomWebApplicationFactory<Program> Factory { get; set; }
-    private HttpClient Client { get; set; }
-    private ITestOutputHelper Output { get; set; }
-    private ApplicationDbContext Context { get; set; }
-
-    public UserTests(
-        CustomWebApplicationFactory<Program> factory,
-        ITestOutputHelper output)
-    {
-        Factory = factory;
-        Client = Factory.CreateClient();
-        Output = output;
-
-        var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
-    }
-
-    private ApplicationDbContext GetScopedContext(IServiceScope scope)
-    {
-        var scopedServices = scope.ServiceProvider;
-        Context = scopedServices.GetRequiredService<ApplicationDbContext>();
-        Context.Database.EnsureDeleted();
-        Context.Database.EnsureCreated();
-        return Context;
-    }
-
     [Fact]
     public async Task CreateUser()
     {
-        var userManagerMock = new Mock<UserManager<UserModel>>(
-            Mock.Of<IUserStore<UserModel>>(),
-            null!, null!, null!, null!, null!, null!, null!, null!);
-        userManagerMock
+        UserManagerMock
             .Setup(m => m.CreateAsync(
                 It.IsAny<UserModel>(),
                 It.IsAny<string>()))
             .Returns(Task.FromResult(IdentityResult.Success));
 
         UserNewDTO postData = new() { UserName = "testUser", Password = "testPass" };
-        var res = await UserService.CreateUser(postData, userManagerMock.Object);
+        var res = await UserService.CreateUser(postData, UserManagerMock.Object);
         
         Assert.NotNull(res);
         Assert.IsType<UserModel>(res);
@@ -63,14 +37,11 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     public async Task LoginUser()
     {
         TestBuilder builder = new(Context, Output);
-
-        var userManagerMock = new Mock<UserManager<UserModel>>(
-            Mock.Of<IUserStore<UserModel>>(), null, null, null, null, null, null, null, null);
-        UserModel builderUser = builder.GetBuilderUser();
-        userManagerMock
+        var builderUser = builder.GetBuilderUser();
+        UserManagerMock
             .Setup(m => m.FindByNameAsync(It.IsAny<string>()))
             .ReturnsAsync(builderUser);
-        userManagerMock
+        UserManagerMock
             .Setup(m => m.CheckPasswordAsync(builderUser, It.IsAny<string>()))
             .ReturnsAsync(true);
         IConfiguration configurationMock = new ConfigurationBuilder()
@@ -80,7 +51,7 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
 
         UserLoginDTO postData = new() { UserName = builderUser.UserName, Password = "testPass" };
         var res = await UserService.LoginUser(
-            userManagerMock.Object, postData, configurationMock);
+            UserManagerMock.Object, postData, configurationMock);
         
         Assert.NotNull(res);
         Assert.IsType<RestDataDTO<string>>(res);

@@ -14,7 +14,7 @@ namespace fakebook.Controllers.v1;
 [ApiVersion("1.0")]
 public class UserController(
     ApplicationDbContext context,
-    ILogger<PostController> logger,
+    ILogger<UserController> logger,
     IConfiguration configuration,
     UserManager<User> userManager,
     SignInManager<User> SignInManager) : ControllerBase
