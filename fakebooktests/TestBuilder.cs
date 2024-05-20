@@ -1,6 +1,4 @@
 ﻿using Models = fakebook.Models;
-using fakebook.Services.v1;
-using Microsoft.VisualStudio.TestPlatform.Utilities;
 using Xunit.Abstractions;
 
 
@@ -13,6 +11,7 @@ internal class TestBuilder(Models.ApplicationDbContext db, ITestOutputHelper out
     public TestBuilder AddUser(Models.User? _user = null)
     {
         var user = _user ?? GetBuilderUser();
+        // Need to add user here the same was I do when creating user in prod code
         db.Add(user);
         db.SaveChanges();
         UserId = user.Id;

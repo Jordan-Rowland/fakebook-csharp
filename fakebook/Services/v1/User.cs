@@ -1,17 +1,19 @@
 ﻿using fakebook.DTO.v1;
-using fakebook.DTO.v1.Post;
 using fakebook.DTO.v1.User;
 using fakebook.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace fakebook.Services.v1;
 
 public class User
 {
     public static async Task<Models.User> CreateUser(
-        ApplicationDbContext context, UserNewDTO postData, UserManager<Models.User> userManager)
+        UserNewDTO postData, UserManager<Models.User> userManager)
     {
         DateTime Now = DateTime.Now;
         Models.User user = new()
@@ -27,16 +29,39 @@ public class User
             About = postData.About,
             Status = UserStatus.Public,
         };
-
-        await userManager.CreateAsync(user, postData.Password);
+        var res = await userManager.CreateAsync(user, postData.Password);
+        if (!res.Succeeded)
+            throw new BadHttpRequestException("An error occured and the user was not created.");
         return user;
     }
 
-    //public static async Task<Models.User> LoginUser(
-    //    ApplicationDbContext context, UserNewDTO postData)
-    //{
-    //    DateTime Now = DateTime.Now;
-    //}
+    public static async Task<RestDataDTO<string>> LoginUser(
+        UserManager<Models.User> userManager, UserLoginDTO postData, IConfiguration configuration)
+    {
+        var user = await userManager.FindByNameAsync(postData.UserName!);
+
+        if (user == null || !await userManager.CheckPasswordAsync(user, postData.Password!))
+            throw new BadHttpRequestException("Invalid login attempt.", StatusCodes.Status400BadRequest);
+
+        var signingCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(
+                    configuration["JWT:SigningKey"])),
+            SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim> { new("UserId", user.Id.ToString()) };
+
+        var jwtObject = new JwtSecurityToken(
+            issuer: configuration["JWT:Issuer"],
+            audience: configuration["JWT:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddSeconds(3600),
+            signingCredentials: signingCredentials);
+
+        var jwtString = new JwtSecurityTokenHandler().WriteToken(jwtObject);
+
+        return new() { Data = jwtString };
+    }
 
     internal static async Task<Models.User> GetUser(ApplicationDbContext context, int id)
     {
@@ -63,7 +88,8 @@ public class User
         if (paging != null)
         {
             if (!string.IsNullOrEmpty(paging.Q))
-                query = query.Where(p => p.UserName.Contains(paging.Q));
+                query = query.Where(u => u.UserName.Contains(paging.Q));
+            
             query = query
                 .Skip(paging.PageIndex * paging.PageSize)
                 .Take(paging.PageSize);
@@ -76,12 +102,13 @@ public class User
     {
         var user = await GetUser(context, id);
         UserStatus status = user.Status;
-        _ = Enum.TryParse(userData.Status ?? status.ToString("G"), out status);
+        Enum.TryParse(userData.Status ?? status.ToString("G"), out status);
 
         if (userData.NewPassword != null)
         {
             if (userData.ExistingPassword == user.PasswordHash)
             {
+                // This needs to be updated...
                 user.PasswordHash = userData.NewPassword;
             }
             else
@@ -101,6 +128,8 @@ public class User
         user.About = userData.About;
         user.Status = status;
         user.LastActive = DateTime.Now;
+
+        // ... Probably needs a new method here
         context.Users.Update(user);
         await context.SaveChangesAsync();
         return user;

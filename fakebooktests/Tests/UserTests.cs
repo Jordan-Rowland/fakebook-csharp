@@ -1,14 +1,14 @@
 ﻿using fakebook.DTO.v1;
 using fakebook.Models;
+using UserModel = fakebook.Models.User;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit.Abstractions;
 using System.Net.Http.Json;
 using fakebook.DTO.v1.User;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore.Infrastructure;
 using Moq;
-using fakebook.Services.v1;
+using UserService = fakebook.Services.v1.User;
+using Microsoft.Extensions.Configuration;
 
 
 namespace fakebooktests.Tests;
@@ -20,11 +20,13 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     private ApplicationDbContext Context { get; set; }
 
     public UserTests(
-        CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
+        CustomWebApplicationFactory<Program> factory,
+        ITestOutputHelper output)
     {
         Factory = factory;
         Client = Factory.CreateClient();
         Output = output;
+
         var scope = Factory.Services.CreateScope();
         Context = GetScopedContext(scope);
     }
@@ -41,48 +43,48 @@ public class UserTests : IClassFixture<CustomWebApplicationFactory<Program>>
     [Fact]
     public async Task CreateUser()
     {
-        var mock = new Mock<UserManager<fakebook.Models.User>>();
-        UserNewDTO postData = new()
-        {
-            UserName = "testUser",
-            Password = "testPass",
-            Email = "testuser@email.com",
-            FirstName = "Test",
-            LastName = "User",
-            Location = "Los Angeles, CA",
-            Photo = "photo.png",
-            About = "B.S. Software Engineering",
-        };
-        var response = await Client.PostAsJsonAsync("/v1/users", postData);
+        var userManagerMock = new Mock<UserManager<UserModel>>(
+            Mock.Of<IUserStore<UserModel>>(),
+            null!, null!, null!, null!, null!, null!, null!, null!);
+        userManagerMock
+            .Setup(m => m.CreateAsync(
+                It.IsAny<UserModel>(),
+                It.IsAny<string>()))
+            .Returns(Task.FromResult(IdentityResult.Success));
+
+        UserNewDTO postData = new() { UserName = "testUser", Password = "testPass" };
+        var res = await UserService.CreateUser(postData, userManagerMock.Object);
         
-        Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
-        Assert.NotNull(response);
-        Assert.Equal(201, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-        Assert.Equal("testUser", data.UserName);
+        Assert.NotNull(res);
+        Assert.IsType<UserModel>(res);
     }
 
-    //[Fact]
-    //public async Task LoginUser()
-    //{
-    //    TestBuilder builder = new(Context, Output);
-    //    builder.AddUser();
+    [Fact]
+    public async Task LoginUser()
+    {
+        TestBuilder builder = new(Context, Output);
 
-    //    UserNewDTO postData = new()
-    //    {
-    //        UserName = "testUser",
-    //        Password = "testPass",
-    //    };
-    //    var response = await Client.PostAsJsonAsync("/v1/users/login", postData);
+        var userManagerMock = new Mock<UserManager<UserModel>>(
+            Mock.Of<IUserStore<UserModel>>(), null, null, null, null, null, null, null, null);
+        UserModel builderUser = builder.GetBuilderUser();
+        userManagerMock
+            .Setup(m => m.FindByNameAsync(It.IsAny<string>()))
+            .ReturnsAsync(builderUser);
+        userManagerMock
+            .Setup(m => m.CheckPasswordAsync(builderUser, It.IsAny<string>()))
+            .ReturnsAsync(true);
+        IConfiguration configurationMock = new ConfigurationBuilder()
+            .AddInMemoryCollection(new Dictionary<string, string?>() {
+                {"JWT:SigningKey", "SigningKeySigningKeySigningKeySigningKey"} })
+            .Build();
 
-    //    Assert.NotNull(response);
-    //    Assert.Equal(200, (int)response.StatusCode);
-    //    var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-    //    ////Output.WriteLine((await response.Content.ReadAsStringAsync()).ToString());
-    //    //Assert.Equal(1, data.Id);
-    //    //Assert.Equal("testUser", data.UserName);
-    //    //Assert.Single(await Context.Users.ToArrayAsync());
-    //}
+        UserLoginDTO postData = new() { UserName = builderUser.UserName, Password = "testPass" };
+        var res = await UserService.LoginUser(
+            userManagerMock.Object, postData, configurationMock);
+        
+        Assert.NotNull(res);
+        Assert.IsType<RestDataDTO<string>>(res);
+    }
 
     [Fact]
     public async Task GetUser()
