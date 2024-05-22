@@ -5,7 +5,7 @@ namespace fakebook.DTO.v1.User;
 public class UserResponseDTO
 {
     public int Id { get; set; }
-    public required string Username { get; set; }
+    public required string UserName { get; set; }
     public string? Email { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
@@ -19,7 +19,7 @@ public class UserResponseDTO
         return new()
         {
             Id = userModel.Id,
-            Username = userModel.Username,
+            UserName = userModel.UserName,
             Email = userModel.Email,
             FirstName = userModel.FirstName,
             LastName = userModel.LastName,

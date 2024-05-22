@@ -1,22 +1,26 @@
 ﻿using fakebook.DTO.v1;
-using fakebook.DTO.v1.Post;
 using fakebook.DTO.v1.User;
 using fakebook.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using db = fakebook.Models.ApplicationDbContext;
+using UserModel = fakebook.Models.User;
 
 namespace fakebook.Services.v1;
 
 public class User
 {
-    public static async Task<Models.User> CreateUser(
-        ApplicationDbContext context, UserNewDTO postData)
+    public static async Task<UserModel> CreateUser(
+        UserManager<UserModel> userManager, UserNewDTO postData)
     {
         DateTime Now = DateTime.Now;
-        Models.User user = new()
+        UserModel user = new()
         {
-            Username = postData.Username,
-            PasswordHash = postData.Password,  // Hash the password
+            UserName = postData.UserName,
             CreatedAt = Now,
             LastActive = Now,
             Email = postData.Email,
@@ -27,27 +31,52 @@ public class User
             About = postData.About,
             Status = UserStatus.Public,
         };
-
-        //{
-        //    Username = "Joroloro123",
-        //    PasswordHash = "blablablah",
-        //    CreatedAt = DateTime.Now,
-        //    LastActive = DateTime.Now,
-        //    Status = 0,
-        //};
-
-        context.Users.Add(user);
-        await context.SaveChangesAsync();
+        var res = await userManager.CreateAsync(user, postData.Password);
+        if (!res.Succeeded)
+            throw new BadHttpRequestException("An error occured and the user was not created.");
         return user;
     }
 
-    internal static async Task<Models.User> GetUser(ApplicationDbContext context, int id)
+    public static async Task<string> LoginUser(
+        UserManager<UserModel> userManager, UserLoginDTO postData, IConfiguration configuration)
     {
-        var user = await context.Users
-            .Where(p => p.Id == id && p.Status != UserStatus.Deleted)
-            .FirstOrDefaultAsync();
+        var user = await userManager.FindByNameAsync(postData.UserName!);
+        if (user == null || !await userManager.CheckPasswordAsync(user, postData.Password!))
+            throw new BadHttpRequestException(
+                "Invalid login attempt.", StatusCodes.Status400BadRequest);
 
-        if (user == null)
+        return await GenerateToken(userManager, user, configuration);
+    }
+
+    public static async Task<string> GenerateToken(
+        UserManager<UserModel> userManager, UserModel user, IConfiguration configuration)
+    {
+        var signingCredentials = new SigningCredentials(
+            new SymmetricSecurityKey(
+                System.Text.Encoding.UTF8.GetBytes(
+                    configuration["JWT:SigningKey"])),
+            SecurityAlgorithms.HmacSha256);
+
+        var claims = new List<Claim> {
+            new("UserId", user.Id.ToString()), new("UserName", user.UserName!)};
+
+        claims.AddRange(
+            (await userManager.GetRolesAsync(user)).Select(r => new Claim("UserRole", r)));
+
+        var jwtObject = new JwtSecurityToken(
+            issuer: configuration["JWT:Issuer"],
+            audience: configuration["JWT:Audience"],
+            claims: claims,
+            expires: DateTime.Now.AddSeconds(60 * 60 * 24),
+            signingCredentials: signingCredentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(jwtObject);
+    }
+
+    public static async Task<UserModel> GetUser(UserManager<UserModel> userManager, int id)
+    {
+        var user = await userManager.FindByIdAsync(id.ToString());
+        if (user == null || user.Status == UserStatus.Deleted)
         {
             throw new BadHttpRequestException(
                 $"User with ID {id} Not Found", StatusCodes.Status404NotFound);
@@ -55,7 +84,7 @@ public class User
         return user;
     }
 
-    internal static async Task<IEnumerable<Models.User>> GetUsers(ApplicationDbContext context, PagingDTO paging)
+    public  static async Task<IEnumerable<UserModel>> GetUsers(db context, PagingDTO paging)
     {
         // Need to account for Private users / Followed users
         var query = context.Users.AsQueryable();
@@ -66,7 +95,8 @@ public class User
         if (paging != null)
         {
             if (!string.IsNullOrEmpty(paging.Q))
-                query = query.Where(p => p.Username.Contains(paging.Q));
+                query = query.Where(u => u.UserName!.Contains(paging.Q));
+            
             query = query
                 .Skip(paging.PageIndex * paging.PageSize)
                 .Take(paging.PageSize);
@@ -75,25 +105,19 @@ public class User
         return await query.ToArrayAsync();
     }
 
-    internal static async Task<Models.User> UpdateUser(ApplicationDbContext context, int id, UserUpdateDTO userData)
+    public  static async Task<UserModel> UpdateUser(
+        UserManager<UserModel> userManager, int id, UserUpdateDTO userData)
     {
-        var user = await GetUser(context, id);
+        var user = await GetUser(userManager, id);
         UserStatus status = user.Status;
-        _ = Enum.TryParse(userData.Status ?? status.ToString("G"), out status);
+        Enum.TryParse(userData.Status ?? status.ToString("G"), out status);
 
-        if (userData.NewPassword != null)
+        if (userData.ExistingPassword != null && userData.NewPassword != null)
         {
-            if (userData.ExistingPassword == user.PasswordHash)
-            {
-                user.PasswordHash = userData.NewPassword;
-            }
-            else
-            {
-                throw new BadHttpRequestException(
-                    $"Existing password does not match. Password cannot be updated",
-                    StatusCodes.Status422UnprocessableEntity
-                );
-            }
+            var passChangeResult = await userManager.ChangePasswordAsync(
+                user, userData.ExistingPassword, userData.NewPassword);
+            if (!passChangeResult.Succeeded)
+                throw new BadHttpRequestException("Existing password not correct.");
         }
 
         user.Email = userData.Email;
@@ -104,18 +128,18 @@ public class User
         user.About = userData.About;
         user.Status = status;
         user.LastActive = DateTime.Now;
-        context.Users.Update(user);
-        await context.SaveChangesAsync();
+        
+        await userManager.UpdateAsync(user);
         return user;
     }
 
-    internal static async Task<Models.User> DeleteUser(ApplicationDbContext context, int id)
+    public  static async Task<UserModel> DeleteUser(
+        UserManager<UserModel> userManager, int UserId)
     {
-        var user = await GetUser(context, id);
+        var user = await GetUser(userManager, UserId);
         user.Status = UserStatus.Deleted;
         user.LastActive = DateTime.Now;
-        context.Users.Update(user);
-        await context.SaveChangesAsync();
+        await userManager.UpdateAsync(user);
         return user;
     }
 }

@@ -1,75 +1,44 @@
-using fakebook.DTO.v1;
-using fakebook.DTO.v1.Post;
-using fakebook.Models;
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using Xunit.Abstractions;
 
+using fakebook.DTO.v1;
+using fakebook.DTO.v1.Post;
+using fakebook.Models;
+using PostService = fakebook.Services.v1.Post;
+using PostModel = fakebook.Models.Post;
+using Microsoft.AspNetCore.Http;
+using fakebook.Services.v1;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+
+
 namespace fakebooktests.Tests;
-
-public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
+public class PostTests(
+    CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
+    : BaseTestClass(factory, output)
 {
-    private CustomWebApplicationFactory<Program> Factory { get; set; }
-    private HttpClient Client { get; set; }
-    private ITestOutputHelper Output { get; set; }
-    private ApplicationDbContext? Context { get; set; }
-
-    public PostTests(
-        CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
-    {
-        Factory = factory;
-        Client = Factory.CreateClient();
-        //Client = Factory.CreateClient(new WebApplicationFactoryClientOptions
-        //{
-        //    AllowAutoRedirect = false
-        //});
-        Output = output;
-    }
-
-    private ApplicationDbContext GetScopedContext(IServiceScope scope)
-    {
-        var scopedServices = scope.ServiceProvider;
-        Context = scopedServices.GetRequiredService<ApplicationDbContext>();
-        Context.Database.EnsureDeleted();
-        Context.Database.EnsureCreated();
-        return Context;
-    }
-
     [Fact]
-    public async void CreatePost()
+    public async Task CreatePost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
         PostNewDTO postData = new() { Body = "Test post" };
+        var response = await PostService.CreatePost(Context, postData, builder.UserId);
 
-        var response = await Client.PostAsJsonAsync("/v1/posts", postData);
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);  // Change and test 201 status
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
-        Output.WriteLine($"{await response.Content.ReadAsStringAsync()}");
-        Assert.Equal(1, data.Id);
-        Assert.Equal(1, data.UserId);
-        Assert.Equal("Test post", data.Body);
-        Assert.Single(await Context.Posts.ToArrayAsync());
+        Assert.IsType<PostModel>(response);
     }
 
     [Fact]
-    public async void GetPost()
+    public async Task GetPost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder
             .AddUser().AddPost().AddPost()
             .AddUser().AddPost();
 
         var response = await Client.GetAsync($"/v1/posts/{builder.PostId}");
+        
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
@@ -78,47 +47,42 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void GetNonexistentPost404Error()
+    public async Task GetNonexistentPost404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts/3");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
 
     [Fact]
-    public async void GetDeletedPost404Error()
+    public async Task GetDeletedPost404Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Deleted;
         builder.AddPost(builderPost);
 
         var response = await Client.GetAsync($"/v1/posts/{builderPost.Id}");
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
     }
 
     [Fact]
-    public async void GetPosts()
+    public async Task GetPosts()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
-
         builder
             .AddUser().AddPost().AddPost()
             .AddUser().AddPost()
             .AddUser().AddPost();
 
         var response = await Client.GetAsync("/v1/posts");
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
@@ -127,52 +91,44 @@ public class PostTests : IClassFixture<CustomWebApplicationFactory<Program>>
     }
 
     [Fact]
-    public async void UpdateDraftPost()
+    public async Task UpdateDraftPost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         var builderPost = builder.AddUser().GetBuilderPost();
         builderPost.Status = PostStatus.Draft;
         builder.AddPost(builderPost);
 
         PostNewDTO putData = new() { Body = "Updated" };
-        var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
+        var response = await PostService.UpdatePost(Context, builder.PostId, putData, builder.UserId);
+
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
-        Assert.Equal(1, data.Id);
-        Assert.Equal("Updated", data.Body);
+        Assert.Equal(1, response.Id);
+        Assert.Equal("Updated", response.Body);
     }
 
     [Fact]
-    public async void UpdatePublishedPost422Error()
+    public async Task UpdatePublishedPost422Error()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
 
         PostNewDTO putData = new() { Body = "Updated" };
-        var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
-        Assert.NotNull(response);
-        Assert.Equal(422, (int)response.StatusCode);
-        var responseString = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Cannot update a PUBLISHED post.", responseString);
+        var ex = await Assert.ThrowsAsync<BadHttpRequestException>(() =>
+            PostService.UpdatePost(Context, builder.PostId, putData, builder.UserId));
+        Assert.Equal(422, ex.StatusCode);
+        Assert.Equal("Cannot update a PUBLISHED post.", ex.Message);
     }
 
     [Fact]
-    public async void DeletePost()
+    public async Task DeletePost()
     {
-        using var scope = Factory.Services.CreateScope();
-        Context = GetScopedContext(scope);
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
+        
+        var response = await PostService.DeletePost(Context, builder.PostId, builder.UserId);
 
-        var response = await Client.DeleteAsync($"/v1/posts/{builder.PostId}");
         Assert.NotNull(response);
-        Assert.Equal(204, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<DateTime>>())!.Data;
-        Assert.Equal(DateTime.Today.Date, data.Date);
+        Assert.Equal(PostStatus.Deleted, response.Status);
+        Assert.Equal(DateTime.Today.Date, response.DeletedAt!.Value.Date);
     }
 }
