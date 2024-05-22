@@ -5,15 +5,6 @@ namespace fakebook.Models;
 
 public class User : IdentityUser<int>
 {
-    //[Key]
-    //[Required]
-    //public int Id { get; set; }
-    //[Required]
-    //[MaxLength(32)]
-    //public string Username { get; set; }
-    //[Required]
-    //public string PasswordHash { get; set; }
-    //public string? Email { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public string? Location { get; set; }
