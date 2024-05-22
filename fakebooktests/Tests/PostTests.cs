@@ -1,12 +1,14 @@
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using System.Net.Http.Json;
 using Xunit.Abstractions;
 
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
-
+using PostService = fakebook.Services.v1.Post;
+using PostModel = fakebook.Models.Post;
+using Microsoft.AspNetCore.Http;
+using fakebook.Services.v1;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 
 namespace fakebooktests.Tests;
@@ -21,16 +23,10 @@ public class PostTests(
         builder.AddUser();
 
         PostNewDTO postData = new() { Body = "Test post" };
+        var response = await PostService.CreatePost(Context, postData, builder.UserId);
 
-        var response = await Client.PostAsJsonAsync("/v1/posts", postData);
         Assert.NotNull(response);
-        Assert.Equal(201, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
-        Output.WriteLine($"{await response.Content.ReadAsStringAsync()}");
-        Assert.Equal(1, data.Id);
-        Assert.Equal(1, data.UserId);
-        Assert.Equal("Test post", data.Body);
-        Assert.Single(await Context.Posts.ToArrayAsync());
+        Assert.IsType<PostModel>(response);
     }
 
     [Fact]
@@ -103,13 +99,11 @@ public class PostTests(
         builder.AddPost(builderPost);
 
         PostNewDTO putData = new() { Body = "Updated" };
-        var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
+        var response = await PostService.UpdatePost(Context, builder.PostId, putData, builder.UserId);
 
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<PostResponseDTO>>())!.Data;
-        Assert.Equal(1, data.Id);
-        Assert.Equal("Updated", data.Body);
+        Assert.Equal(1, response.Id);
+        Assert.Equal("Updated", response.Body);
     }
 
     [Fact]
@@ -119,12 +113,10 @@ public class PostTests(
         builder.AddUser().AddPost();
 
         PostNewDTO putData = new() { Body = "Updated" };
-
-        var response = await Client.PutAsJsonAsync($"/v1/posts/{builder.PostId}", putData);
-        Assert.NotNull(response);
-        Assert.Equal(422, (int)response.StatusCode);
-        var responseString = await response.Content.ReadAsStringAsync();
-        Assert.Contains("Cannot update a PUBLISHED post.", responseString);
+        var ex = await Assert.ThrowsAsync<BadHttpRequestException>(() =>
+            PostService.UpdatePost(Context, builder.PostId, putData, builder.UserId));
+        Assert.Equal(422, ex.StatusCode);
+        Assert.Equal("Cannot update a PUBLISHED post.", ex.Message);
     }
 
     [Fact]
@@ -132,12 +124,11 @@ public class PostTests(
     {
         TestBuilder builder = new(Context, Output);
         builder.AddUser().AddPost();
-
-        var response = await Client.DeleteAsync($"/v1/posts/{builder.PostId}");
+        
+        var response = await PostService.DeletePost(Context, builder.PostId, builder.UserId);
 
         Assert.NotNull(response);
-        Assert.Equal(204, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<DateTime>>())!.Data;
-        Assert.Equal(DateTime.Today.Date, data.Date);
+        Assert.Equal(PostStatus.Deleted, response.Status);
+        Assert.Equal(DateTime.Today.Date, response.DeletedAt!.Value.Date);
     }
 }

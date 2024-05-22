@@ -15,7 +15,6 @@ public class BaseTestClass : IClassFixture<CustomWebApplicationFactory<Program>>
     public ApplicationDbContext Context { get; set; }
     public Mock<UserManager<UserModel>> UserManagerMock { get; set; }
 
-
     public BaseTestClass(
         CustomWebApplicationFactory<Program> factory, ITestOutputHelper output)
     {

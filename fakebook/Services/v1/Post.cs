@@ -3,6 +3,7 @@
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
+using static fakebook.Services.v1.ServiceHelper;
 using System.Diagnostics;
 
 
@@ -10,16 +11,16 @@ namespace fakebook.Services.v1;
 
 public static class Post
 {
-    public static async Task<Models.Post> CreatePost(ApplicationDbContext context, PostNewDTO postData)
+    public static async Task<Models.Post> CreatePost(
+        ApplicationDbContext context, PostNewDTO postData, int userId)
     {
-        // Try and except block and throw a meaningful error!
         try
         {
             PostStatus status = PostStatus.Published;
             _ = Enum.TryParse(postData.Status, out status);
             Models.Post post = new()
             {
-                UserId = 1,  // Needs to be set via auth
+                UserId = userId,
                 Body = postData.Body,
                 ParentId = postData.ParentId,
                 Status = status,
@@ -28,7 +29,7 @@ public static class Post
             context.Posts.Add(post);
             await context.SaveChangesAsync();
             return post;
-    }
+        }
         catch (Exception ex)
         {
             string message = ex switch
@@ -38,11 +39,11 @@ public static class Post
             };
 
             throw new BadHttpRequestException(message, StatusCodes.Status400BadRequest);
-}
+        }
     }
 
     public static async Task<Models.Post[]> GetPosts(
-        ApplicationDbContext context, PagingDTO? paging = null)
+        ApplicationDbContext context, int? userId, PagingDTO? paging = null)
     {
         var query = context.Posts.AsQueryable();
         query = query
@@ -53,6 +54,7 @@ public static class Post
         {
             if (!string.IsNullOrEmpty(paging.Q))
                 query = query.Where(p => p.Body.Contains(paging.Q));
+            
             query = query
                 .Skip(paging.PageIndex * paging.PageSize)
                 .Take(paging.PageSize);
@@ -67,7 +69,6 @@ public static class Post
         var post = await context.Posts
             .Where(p => p.Id == id && p.Status != PostStatus.Deleted)
             .FirstOrDefaultAsync();
-
         if (post == null)
         {
             throw new BadHttpRequestException(
@@ -77,16 +78,19 @@ public static class Post
     }
 
     public static async Task<Models.Post> UpdatePost(
-        ApplicationDbContext context, int id, PostUpdateDTO postData)
+        ApplicationDbContext context, int id, PostUpdateDTO postData, int userId)
     {
         var post = await GetPost(context, id);
+        if (post.UserId != userId)
+            throw new BadHttpRequestException("User ID does not match the current user.");
+
         PostStatus status = post.Status;
         if (status != PostStatus.Draft)
         {
             throw new BadHttpRequestException(
                 $"Cannot update a PUBLISHED post.", StatusCodes.Status422UnprocessableEntity);
         }
-        _ = Enum.TryParse(postData.Status ?? status.ToString("G"), out status);
+        Enum.TryParse(postData.Status ?? status.ToString("G"), out status);
         post.Body = postData.Body;
         post.Status = status;
         context.Posts.Update(post);
@@ -94,9 +98,11 @@ public static class Post
         return post;
     }
 
-    public static async Task<Models.Post> DeletePost(ApplicationDbContext context, int id)
+    public static async Task<Models.Post> DeletePost(ApplicationDbContext context, int id, int userId)
     {
         var post = await GetPost(context, id);
+        if (post.UserId != userId)
+            throw new BadHttpRequestException("User ID does not match the current user.");
         post.Status = PostStatus.Deleted;
         post.DeletedAt = DateTime.Now;
         context.Posts.Update(post);

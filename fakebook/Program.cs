@@ -1,6 +1,7 @@
 using Asp.Versioning;
 using fakebook.Models;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -101,6 +102,8 @@ public class Program
             };
         });
 
+        builder.Services.AddHttpContextAccessor();
+
         var app = builder.Build();
 
         if (app.Configuration.GetValue<bool>("UseSwagger"))
@@ -155,6 +158,14 @@ public class Program
             [EnableCors("AnyOrigin_GetOnly")]
             [ResponseCache(NoStore = true)] () =>
                 { throw new BadHttpRequestException("test", StatusCodes.Status412PreconditionFailed); });
+        
+        app.MapGet("/auth/test/1",
+            [Authorize]
+            [EnableCors("AnyOrigin")]
+            [ResponseCache(NoStore = true)] () =>
+            {
+                return Results.Ok("You are authorized!");
+            });
 
         app.MapControllers();
 

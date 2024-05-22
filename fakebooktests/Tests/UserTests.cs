@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Xunit.Abstractions;
+﻿using Xunit.Abstractions;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Identity;
 using Moq;
@@ -10,6 +9,7 @@ using fakebook.DTO.v1.User;
 using fakebook.Models;
 using UserModel = fakebook.Models.User;
 using UserService = fakebook.Services.v1.User;
+using Microsoft.AspNetCore.Http;
 
 
 namespace fakebooktests.Tests;
@@ -27,7 +27,7 @@ public class UserTests(
             .Returns(Task.FromResult(IdentityResult.Success));
 
         UserNewDTO postData = new() { UserName = "testUser", Password = "testPass" };
-        var res = await UserService.CreateUser(postData, UserManagerMock.Object);
+        var res = await UserService.CreateUser(UserManagerMock.Object, postData);
         
         Assert.NotNull(res);
         Assert.IsType<UserModel>(res);
@@ -38,12 +38,16 @@ public class UserTests(
     {
         TestBuilder builder = new(Context, Output);
         var builderUser = builder.GetBuilderUser();
+        builder.AddUser(builderUser);
         UserManagerMock
             .Setup(m => m.FindByNameAsync(It.IsAny<string>()))
             .ReturnsAsync(builderUser);
         UserManagerMock
             .Setup(m => m.CheckPasswordAsync(builderUser, It.IsAny<string>()))
             .ReturnsAsync(true);
+        UserManagerMock
+            .Setup(m => m.GetRolesAsync(It.IsAny<UserModel>()))
+            .ReturnsAsync(["Administrator"]);
         IConfiguration configurationMock = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>() {
                 {"JWT:SigningKey", "SigningKeySigningKeySigningKeySigningKey"} })
@@ -54,7 +58,7 @@ public class UserTests(
             UserManagerMock.Object, postData, configurationMock);
         
         Assert.NotNull(res);
-        Assert.IsType<RestDataDTO<string>>(res);
+        Assert.IsType<string>(res);
     }
 
     [Fact]
@@ -63,8 +67,8 @@ public class UserTests(
         TestBuilder builder = new(Context, Output);
         builder.AddUser();
 
-        var response = await Client.GetAsync($"/v1/users/{builder.UserId}");
-        
+        var response = await Client.GetAsync($"/v1/users/1");
+
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
@@ -93,8 +97,13 @@ public class UserTests(
 
         var response = await Client.GetAsync($"/v1/users/{builderUser.Id}");
 
+        Output.WriteLine(await response.Content.ReadAsStringAsync());
+
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
+        Assert.Contains(
+            $"User with ID {builderUser.Id} Not Found",
+            await response.Content.ReadAsStringAsync());
     }
 
     [Fact]
@@ -116,51 +125,68 @@ public class UserTests(
     public async Task UpdateUser()
     {
         TestBuilder builder = new(Context, Output);
-        builder.AddUser();
-        
+        var testUser = builder.GetBuilderUser();
+        builder.AddUser(testUser);
+        UserManagerMock
+            .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .Returns(Task.FromResult(testUser));
+        UserManagerMock
+            .Setup(m => m.UpdateAsync(It.IsAny<UserModel>()))
+            .Returns(Task.FromResult(IdentityResult.Success));
+
         UserUpdateDTO putData = new() { Email = "Updated@email.com" };
-        var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
+        var response = await UserService.UpdateUser(UserManagerMock.Object, builder.UserId, putData);
 
         Assert.NotNull(response);
-        Assert.Equal(200, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-        Assert.Equal(1, data.Id);
-        Assert.Equal("Updated@email.com", data.Email);
+        Assert.Equal(1, response.Id);
+        Assert.Equal("Updated@email.com", response.Email);
+    }
+
+    public class IdentityResultMock : IdentityResult
+    {
+        public IdentityResultMock(bool succeeded = false) => Succeeded = succeeded;
     }
 
     [Fact]
-    public async Task UpdateUser422Error()
+    public async Task UpdatePasswordFail()
     {
         TestBuilder builder = new(Context, Output);
-        builder.AddUser();
+        UserModel testUser = builder.GetBuilderUser();
+        UserManagerMock
+            .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .Returns(Task.FromResult(testUser));
+        IdentityResultMock identityResultMock = new();
+        UserManagerMock
+            .Setup(m => m.ChangePasswordAsync(
+                It.IsAny<UserModel>(),
+                It.IsAny<string>(),
+                It.IsAny<string>()
+            )).ReturnsAsync(identityResultMock);
 
         UserUpdateDTO putData = new()
         {
             ExistingPassword = "WrongP@55",
             NewPassword = "WrongP@55!2",
         };
-        var response = await Client.PutAsJsonAsync($"/v1/users/{builder.UserId}", putData);
-
-        Assert.NotNull(response);
-        Assert.Equal(422, (int)response.StatusCode);
-        var responseString = await response.Content.ReadAsStringAsync();
-        Assert.Contains(
-            "Existing password does not match. Password cannot be updated.",
-            responseString
-        );
+        var ex = await Assert.ThrowsAsync<BadHttpRequestException>(
+            () => UserService.UpdateUser(UserManagerMock.Object, builder.UserId, putData));
+        Assert.Equal(400, ex.StatusCode);
+        Assert.Equal("Existing password not correct.", ex.Message);
     }
 
     [Fact]
     public async Task DeleteUser()
     {
         TestBuilder builder = new(Context, Output);
-        builder.AddUser();
+        UserModel testUser = builder.GetBuilderUser();
+        UserManagerMock
+            .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .Returns(Task.FromResult(testUser));
 
-        var response = await Client.DeleteAsync($"/v1/users/{builder.UserId}");
-        
+        var response = await UserService.DeleteUser(UserManagerMock.Object, builder.UserId);
+
         Assert.NotNull(response);
-        Assert.Equal(204, (int)response.StatusCode);
-        var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<DateTime>>())!.Data;
-        Assert.Equal(DateTime.Today.Date, data.Date);
+        Assert.Equal(UserStatus.Deleted, response.Status);
+        Assert.Equal(DateTime.Today.Date, response.LastActive.Date);
     }
 }

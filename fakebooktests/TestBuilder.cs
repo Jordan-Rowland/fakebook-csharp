@@ -26,7 +26,7 @@ internal class TestBuilder(Models.ApplicationDbContext db, ITestOutputHelper out
             PasswordHash = "asdfasdfqwerty",
             CreatedAt = DateTime.Now,
             LastActive = DateTime.Now,
-            Status = 0,
+            Status = Models.UserStatus.Public,
         };
     }
 

@@ -1,11 +1,12 @@
 ﻿using Asp.Versioning;
 using Microsoft.AspNetCore.Mvc;
-
 using fakebook.DTO.v1;
 using UserService = fakebook.Services.v1.User;
 using fakebook.Models;
 using fakebook.DTO.v1.User;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Authorization;
+using static fakebook.Controllers.v1.ControllerHelper;
 
 
 namespace fakebook.Controllers.v1;
@@ -13,11 +14,21 @@ namespace fakebook.Controllers.v1;
 [ApiController]
 [ApiVersion("1.0")]
 public class UserController(
-    ApplicationDbContext context,
-    ILogger<UserController> logger,
-    IConfiguration configuration,
-    UserManager<User> userManager,
-    SignInManager<User> SignInManager) : ControllerBase
+        ApplicationDbContext context,
+        ILogger<PostController> logger,
+        IConfiguration configuration,
+        RoleManager<ApplicationRole> roleManager,
+        UserManager<User> userManager,
+        SignInManager<User> signInManager,
+        IHttpContextAccessor httpContextAccessor)
+    : CustomControllerBase<PostController>(
+        context,
+        logger,
+        configuration,
+        roleManager,
+        userManager,
+        signInManager,
+        httpContextAccessor)
 {
     [HttpPost]
     // https://code-maze.com/swagger-ui-asp-net-core-web-api/
@@ -27,11 +38,10 @@ public class UserController(
     [ResponseCache(NoStore = true)]
     public async Task<RestDataDTO<UserResponseDTO>> Post(UserNewDTO postData)
     {
-        var user = await UserService.CreateUser(postData, userManager);
-        return ControllerHelper.ReturnDataWithStatusCode(
+        var user = await UserService.CreateUser(UserManager, postData);
+        return ReturnDataWithStatusCode(
             new RestDataDTO<UserResponseDTO>() { Data = UserResponseDTO.Dump(user) },
-            statusCode: 201,
-            HttpContext
+            statusCode: 201, HttpContext
         );
     }
 
@@ -39,18 +49,21 @@ public class UserController(
     [ProducesResponseType(200)]
     [ResponseCache(NoStore = true)]
     //{
-	   // "username": "slimjob_dopamine",
-	   // "password": "Qwerty1!"
+    // "username": "slimjob_dopamine",
+    // "password": "Qwerty1!"
     //}
-    public async Task<RestDataDTO<string>> Login(UserLoginDTO postData) =>
-        await UserService.LoginUser(userManager, postData, configuration);
+    public async Task<RestDataDTO<string>> Login(UserLoginDTO postData)
+    {
+        return new RestDataDTO<string> {
+            Data = await UserService.LoginUser(UserManager, postData, Configuration)};
+    }
 
     [ProducesResponseType(200)]
     [ProducesResponseType(404)]
     [HttpGet]
     public async Task<RestDataDTO<UserResponseDTO[]>> GetUsers([FromQuery] PagingDTO paging)
     {
-        var results = (await UserService.GetUsers(context, paging))
+        var results = (await UserService.GetUsers(Context, paging))
             .Select(UserResponseDTO.Dump).ToArray();
         return new RestResponseDTO<UserResponseDTO[]>
         {
@@ -67,29 +80,30 @@ public class UserController(
     [HttpGet("{id}")]
     public async Task<RestDataDTO<UserResponseDTO>> GetUser(int id)
     {
-        var user = await UserService.GetUser(context, id);
+        var user = await UserService.GetUser(UserManager, id);
         return new() { Data = UserResponseDTO.Dump(user) };
     }
 
     [ProducesResponseType(200)]
     [ProducesResponseType(422)]
+    [Authorize]
     [HttpPut("{id}")]
     [ResponseCache(NoStore = true)]
     public async Task<RestDataDTO<UserResponseDTO>> Put(int id, UserUpdateDTO userData)
     {
-        var user = await UserService.UpdateUser(context, id, userData);
+        var user = await UserService.UpdateUser(UserManager, id, userData);
         return new() { Data = UserResponseDTO.Dump(user) };
     }
 
     [ProducesResponseType(204)]
-    [HttpDelete("{id}")]
-    public async Task<RestDataDTO<DateTime>> Delete(int id)
+    [Authorize]
+    [HttpDelete]
+    public async Task<RestDataDTO<DateTime>> Delete()
     {
-        var user = await UserService.DeleteUser(context, id);
-        return ControllerHelper.ReturnDataWithStatusCode(
+        var user = await UserService.DeleteUser(UserManager, UserId!.Value);
+        return ReturnDataWithStatusCode(
             new RestDataDTO<DateTime>() { Data = user.LastActive! },
-            statusCode: 204,
-            HttpContext
+            statusCode: 204, HttpContext
         );
     }
 }

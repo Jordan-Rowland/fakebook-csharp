@@ -34,5 +34,6 @@ public class ApplicationDbContext(
 
 public class ApplicationRole : IdentityRole<int>
 {
+    public ApplicationRole(string roleName) : base(roleName) { }
+    public ApplicationRole() : base() { }
 }
-
