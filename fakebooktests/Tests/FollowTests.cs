@@ -33,6 +33,30 @@ public class FollowTests(
     }
 
     [Fact]
+    public async Task AddFollowerToPrivateUser()
+    {
+        TestBuilder builder = new(Context, Output);
+        builder.AddUser().AddUser();
+        var mockedUser = builder.GetBuilderUser();
+        mockedUser.Id = builder.UserId - 1;
+        mockedUser.Status = fakebook.Models.UserStatus.Private;
+        UserManagerMock
+            .Setup(m => m.FindByIdAsync((builder.UserId - 1).ToString()))
+            .ReturnsAsync(mockedUser);
+
+        var result = await FollowService.FollowUser(
+            Context, UserManagerMock.Object, builder.UserId, builder.UserId - 1);
+
+        Assert.NotNull(result);
+        Assert.Equal(result.FollowerId, builder.UserId);
+        Assert.Equal(result.FollowedId, builder.UserId - 1);
+        var follow = Context.Follows
+            .Where(f => f.FollowerId == builder.UserId)
+            .FirstOrDefault();
+        Assert.True(follow!.Pending);
+    }
+
+    [Fact]
     public async Task Unfollow()
     {
         TestBuilder builder = new(Context, Output);
