@@ -27,7 +27,6 @@ public class User
             FirstName = postData.FirstName,
             LastName = postData.LastName,
             Location = postData.Location,
-            Photo = postData.Photo,
             About = postData.About,
             Status = UserStatus.Public,
         };
@@ -67,7 +66,7 @@ public class User
             issuer: configuration["JWT:Issuer"],
             audience: configuration["JWT:Audience"],
             claims: claims,
-            expires: DateTime.Now.AddSeconds(60 * 60 * 24),
+            expires: DateTime.Now.AddSeconds(60 * 60 * 24 * 30), // 30 days
             signingCredentials: signingCredentials);
 
         return new JwtSecurityTokenHandler().WriteToken(jwtObject);
@@ -124,7 +123,6 @@ public class User
         user.FirstName = userData.FirstName;
         user.LastName = userData.LastName;
         user.Location = userData.Location;
-        user.Photo = userData.Photo;
         user.About = userData.About;
         user.Status = status;
         user.LastActive = DateTime.Now;
