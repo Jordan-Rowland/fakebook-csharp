@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Authorization;
 using System.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using static fakebook.Controllers.v1.ControllerHelper;
-using Microsoft.Extensions.Configuration;
 
 
 namespace fakebook.Controllers.v1;

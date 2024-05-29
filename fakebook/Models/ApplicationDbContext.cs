@@ -25,11 +25,11 @@ public class ApplicationDbContext(
             .HasForeignKey(x => x.UserId)
             .IsRequired()
             .OnDelete(DeleteBehavior.NoAction);
-
     }
 
     public DbSet<Post> Posts => Set<Post>();
-    //public DbSet<User> Users => Set<User>();
+    //public DbSet<User> Users => Set<User>();  // This seems to be covered by Identity
+    public DbSet<Follow> Follows => Set<Follow>();
 }
 
 public class ApplicationRole : IdentityRole<int>

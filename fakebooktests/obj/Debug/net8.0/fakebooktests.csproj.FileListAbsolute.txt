@@ -487,3 +487,7 @@ C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runt
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\runtimes\win-x86\native\e_sqlite3.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Castle.Core.dll
 C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\Moq.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Cryptography.Internal.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.AspNetCore.Cryptography.KeyDerivation.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Core.dll
+C:\Users\Jordan\source\repos\fakebook-csharp\fakebooktests\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Stores.dll

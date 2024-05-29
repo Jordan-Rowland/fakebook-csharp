@@ -1,12 +1,12 @@
 ﻿using fakebook.Models;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
 using UserModel = fakebook.Models.User;
 
+
 namespace fakebook.Controllers.v1;
-[ApiController]
+//[ApiController]
 public class CustomControllerBase<T> : ControllerBase
 {
     public ApplicationDbContext Context { get; set; }

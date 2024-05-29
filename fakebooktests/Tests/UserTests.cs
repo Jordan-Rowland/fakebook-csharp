@@ -97,8 +97,6 @@ public class UserTests(
 
         var response = await Client.GetAsync($"/v1/users/{builderUser.Id}");
 
-        Output.WriteLine(await response.Content.ReadAsStringAsync());
-
         Assert.NotNull(response);
         Assert.Equal(404, (int)response.StatusCode);
         Assert.Contains(
@@ -129,7 +127,7 @@ public class UserTests(
         builder.AddUser(testUser);
         UserManagerMock
             .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
-            .Returns(Task.FromResult(testUser));
+            .Returns(Task.FromResult(testUser)!);
         UserManagerMock
             .Setup(m => m.UpdateAsync(It.IsAny<UserModel>()))
             .Returns(Task.FromResult(IdentityResult.Success));
