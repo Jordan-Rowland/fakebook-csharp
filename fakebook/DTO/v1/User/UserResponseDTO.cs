@@ -14,12 +14,14 @@ public class UserResponseDTO
     public string? About { get; set; }
     public UserStatus Status { get; set; }
 
+    public IList<int>? FollowingIds { get; set; } = [];
+
     public static UserResponseDTO Dump(Models.User userModel)
     {
         return new()
         {
             Id = userModel.Id,
-            UserName = userModel.UserName,
+            UserName = userModel.UserName!,
             Email = userModel.Email,
             FirstName = userModel.FirstName,
             LastName = userModel.LastName,
@@ -27,6 +29,7 @@ public class UserResponseDTO
             Photo = userModel.Photo,
             About = userModel.About,
             Status = userModel.Status,
+            FollowingIds = userModel.FollowingIds,
         };
     }
 }

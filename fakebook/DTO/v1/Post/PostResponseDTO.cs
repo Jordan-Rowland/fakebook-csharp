@@ -6,7 +6,7 @@ public class PostResponseDTO : PostNewDTO
 {
     public int Id { get; set; }
     public int UserId { get; set; }
-    //public Models.User User { get; set; }  // This should be UserDTO
+    //public User.UserResponseDTO User { get; set; }  // This should be UserDTO
     public DateTime CreatedAt { get; set; }
 
     public static PostResponseDTO Dump(Models.Post postModel)

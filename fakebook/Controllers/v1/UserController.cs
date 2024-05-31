@@ -80,7 +80,7 @@ public class UserController(
     [HttpGet("{id}")]
     public async Task<RestDataDTO<UserResponseDTO>> GetUser(int id)
     {
-        var user = await UserService.GetUser(UserManager, id);
+        var user = await UserService.GetUser(UserManager, id, Context);
         return new() { Data = UserResponseDTO.Dump(user) };
     }
 

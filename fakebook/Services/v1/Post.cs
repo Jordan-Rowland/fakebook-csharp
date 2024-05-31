@@ -1,24 +1,27 @@
 ﻿using Microsoft.EntityFrameworkCore;
-
 using fakebook.DTO.v1;
 using fakebook.DTO.v1.Post;
 using fakebook.Models;
-using static fakebook.Services.v1.ServiceHelper;
+using UserService = fakebook.Services.v1.User;
+using UserModel = fakebook.Models.User;
+using PostModel = fakebook.Models.Post;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Hosting;
 
 
 namespace fakebook.Services.v1;
 
 public static class Post
 {
-    public static async Task<Models.Post> CreatePost(
+    public static async Task<PostModel> CreatePost(
         ApplicationDbContext context, PostNewDTO postData, int userId)
     {
         try
         {
             PostStatus status = PostStatus.Published;
             _ = Enum.TryParse(postData.Status, out status);
-            Models.Post post = new()
+            PostModel post = new()
             {
                 UserId = userId,
                 Body = postData.Body,
@@ -42,13 +45,25 @@ public static class Post
         }
     }
 
-    public static async Task<Models.Post[]> GetPosts(
-        ApplicationDbContext context, int? userId, PagingDTO? paging = null)
+    public static async Task<PostModel[]> GetPosts(
+        ApplicationDbContext context, UserManager<UserModel> userManager, int? userId, PagingDTO? paging = null)
     {
-        var query = context.Posts.AsQueryable();
-        query = query
-            .Where(p => p.Status != PostStatus.Deleted)
-            .OrderByDescending(p => p.CreatedAt);
+        UserModel? currUser = userId.HasValue ? await UserService.GetUser(userManager, userId.Value, context) : null;
+        var query = context.Posts
+            .Join(context.Users,
+                post => post.UserId,
+                user => user.Id,
+                (post, user) => new { Post = post, User = user })
+            .Where(joined => joined.Post.Status == PostStatus.Published)
+            .Where(joined =>
+                joined.User.Status == UserStatus.Public ||
+                (joined.User.Status != UserStatus.Private &&
+                    (currUser != null) &&
+                    (currUser.Id == joined.User.Id
+                        || currUser.FollowingIds!.Contains(joined.User.Id))))
+            .OrderByDescending(joined => joined.Post.CreatedAt)
+            .Select(joined => joined.Post)
+            .AsQueryable();
 
         if (paging != null)
         {
@@ -64,7 +79,7 @@ public static class Post
         return await query.ToArrayAsync();
     }
 
-    public static async Task<Models.Post> GetPost(ApplicationDbContext context, int id)
+    public static async Task<PostModel> GetPost(ApplicationDbContext context, int id)
     {
         var post = await context.Posts
             .Where(p => p.Id == id && p.Status != PostStatus.Deleted)
@@ -77,7 +92,7 @@ public static class Post
         return post;
     }
 
-    public static async Task<Models.Post> UpdatePost(
+    public static async Task<PostModel> UpdatePost(
         ApplicationDbContext context, int id, PostUpdateDTO postData, int userId)
     {
         var post = await GetPost(context, id);
@@ -98,7 +113,7 @@ public static class Post
         return post;
     }
 
-    public static async Task<Models.Post> DeletePost(ApplicationDbContext context, int id, int userId)
+    public static async Task<PostModel> DeletePost(ApplicationDbContext context, int id, int userId)
     {
         var post = await GetPost(context, id);
         if (post.UserId != userId)

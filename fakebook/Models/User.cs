@@ -17,7 +17,8 @@ public class User : IdentityUser<int>
     [Required]
     public UserStatus Status { get; set; }
 
-    public ICollection<Post> Posts { get; set; }
+    public ICollection<Post>? Posts { get; set; }
+    public IList<int>? FollowingIds { get; set; }
 }
 
 public enum UserStatus { Public, Private, Deleted }

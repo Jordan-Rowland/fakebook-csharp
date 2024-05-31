@@ -62,17 +62,18 @@ public class UserTests(
     }
 
     [Fact]
-    public async Task GetUser()
+    public async Task GetUserWithFollowedIds()
     {
         TestBuilder builder = new(Context, Output);
-        builder.AddUser();
+        builder.AddUser().AddUser().AddFollow();
 
-        var response = await Client.GetAsync($"/v1/users/1");
+        var response = await Client.GetAsync($"/v1/users/2");
 
         Assert.NotNull(response);
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestDataDTO<UserResponseDTO>>())!.Data;
-        Assert.Equal($"Builder User 1", data.UserName);
+        Assert.Equal($"Builder User 2", data.UserName);
+        Assert.Equal([1], data.FollowingIds);
     }
 
     [Fact]
@@ -98,6 +99,7 @@ public class UserTests(
         var response = await Client.GetAsync($"/v1/users/{builderUser.Id}");
 
         Assert.NotNull(response);
+        Output.WriteLine(await response.Content.ReadAsStringAsync());
         Assert.Equal(404, (int)response.StatusCode);
         Assert.Contains(
             $"User with ID {builderUser.Id} Not Found",

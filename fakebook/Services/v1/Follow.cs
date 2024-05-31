@@ -68,6 +68,7 @@ public class Follow
     {
         return await context.Follows
                             .Where(f => f.FollowerId == userId)
+                            .Where(f => !f.Pending)
                             .Select(f => f.FollowedId)
                             .ToListAsync();
     }

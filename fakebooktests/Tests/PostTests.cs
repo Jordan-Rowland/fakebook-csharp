@@ -6,9 +6,10 @@ using fakebook.DTO.v1.Post;
 using fakebook.Models;
 using PostService = fakebook.Services.v1.Post;
 using PostModel = fakebook.Models.Post;
+using UserModel = fakebook.Models.User;
 using Microsoft.AspNetCore.Http;
 using fakebook.Services.v1;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Moq;
 
 
 namespace fakebooktests.Tests;
@@ -33,9 +34,10 @@ public class PostTests(
     public async Task GetPost()
     {
         TestBuilder builder = new(Context, Output);
-        builder
-            .AddUser().AddPost().AddPost()
-            .AddUser().AddPost();
+        builder.AddUser().AddPost().AddPost();
+        var builderUser = builder.GetBuilderUser();
+        builderUser.Status = UserStatus.Private;
+        builder.AddUser(builderUser).AddPost();
 
         var response = await Client.GetAsync($"/v1/posts/{builder.PostId}");
         
@@ -84,11 +86,61 @@ public class PostTests(
         var response = await Client.GetAsync("/v1/posts");
 
         Assert.NotNull(response);
+        Output.WriteLine(await response.Content.ReadAsStringAsync());
         Assert.Equal(200, (int)response.StatusCode);
         var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
         Assert.Equal(4, data.Length);
         Assert.Equal(3, data[0].UserId);
     }
+
+    [Fact]
+    public async Task DontShowPrivatePostsToNonLoggedInUser()
+    {
+        TestBuilder builder = new(Context, Output);
+        var builderPrivateUser = builder.GetBuilderUser();
+        builderPrivateUser.Status = UserStatus.Private;
+        builder.AddUser(builderPrivateUser).AddPost().AddPost();
+
+        var response = await PostService.GetPosts(Context, null, null);
+
+        Assert.NotNull(response);
+        Assert.Empty(response);
+    }
+
+    [Fact]
+    public async Task DontShowPrivatePostsToNonFollowingLoggedInUser()
+    {
+        TestBuilder builder = new(Context, Output);
+        var builderPrivateUser = builder.GetBuilderUser();
+        builderPrivateUser.Status = UserStatus.Private;
+        builder.AddUser(builderPrivateUser).AddPost().AddPost();
+        var builderUser = builder.GetBuilderUser();
+        builder.AddUser(builderUser);
+        UserManagerMock
+            .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
+            .ReturnsAsync(builderUser);
+
+        var response = await PostService.GetPosts(Context, UserManagerMock.Object, builder.UserId);
+
+        Assert.NotNull(response);
+        Assert.Empty(response);
+    }
+
+    //[Fact]
+    //public async Task GetPostsWithNoFollowers()
+    //{
+    //    TestBuilder builder = new(Context, Output);
+    //    var builderPrivateUser = builder.GetBuilderUser();
+    //    builderPrivateUser.Status = UserStatus.Private;
+    //    builder.AddUser(builderPrivateUser).AddPost().AddPost();
+
+    //    var response = await PostService.GetPosts(Context, );
+
+    //    Assert.NotNull(response);
+    //    Assert.Equal(200, (int)response.StatusCode);
+    //    //var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
+    //    Assert.Empty(data);
+    //}
 
     [Fact]
     public async Task UpdateDraftPost()

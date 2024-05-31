@@ -53,7 +53,7 @@ public class PostController(
     public async Task<RestDataDTO<PostResponseDTO[]>> GetPosts([FromQuery] PagingDTO paging)
     {
         // Need to be able to see if user can view private posts??
-        var results = (await PostService.GetPosts(Context, UserId, paging))
+        var results = (await PostService.GetPosts(Context, userManager, UserId, paging))
             .Select(PostResponseDTO.Dump).ToArray();
         return new RestResponseDTO<PostResponseDTO[]>
         {

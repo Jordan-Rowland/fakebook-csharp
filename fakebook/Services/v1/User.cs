@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using db = fakebook.Models.ApplicationDbContext;
+using FollowService = fakebook.Services.v1.Follow;
 using UserModel = fakebook.Models.User;
 
 namespace fakebook.Services.v1;
@@ -72,7 +73,8 @@ public class User
         return new JwtSecurityTokenHandler().WriteToken(jwtObject);
     }
 
-    public static async Task<UserModel> GetUser(UserManager<UserModel> userManager, int id)
+    public static async Task<UserModel> GetUser(
+        UserManager<UserModel> userManager, int id, db? context = null)
     {
         var user = await userManager.FindByIdAsync(id.ToString());
         if (user == null || user.Status == UserStatus.Deleted)
@@ -80,6 +82,9 @@ public class User
             throw new BadHttpRequestException(
                 $"User with ID {id} Not Found", StatusCodes.Status404NotFound);
         }
+        if (context != null)
+            user.FollowingIds = await FollowService.GetFollowIds(context, user.Id);
+
         return user;
     }
 

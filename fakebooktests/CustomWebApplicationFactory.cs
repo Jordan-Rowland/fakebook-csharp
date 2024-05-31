@@ -1,7 +1,5 @@
 ﻿using fakebook.Models;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -22,13 +20,13 @@ public class CustomWebApplicationFactory<TProgram> : WebApplicationFactory<TProg
                 d => d.ServiceType ==
                     typeof(DbContextOptions<ApplicationDbContext>));
 
-            services.Remove(dbContextDescriptor);
+            services.Remove(dbContextDescriptor!);
 
             var dbConnectionDescriptor = services.SingleOrDefault(
                 d => d.ServiceType ==
                     typeof(DbConnection));
 
-            services.Remove(dbConnectionDescriptor);
+            services.Remove(dbConnectionDescriptor!);
 
             // Create open SqliteConnection so EF won't automatically close it.
             services.AddSingleton<DbConnection>(container =>

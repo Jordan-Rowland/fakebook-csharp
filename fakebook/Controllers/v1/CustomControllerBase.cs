@@ -22,8 +22,8 @@ public class CustomControllerBase<T> : ControllerBase
         ILogger<T> logger,
         IConfiguration configuration,
         RoleManager<ApplicationRole> roleManager,
-        UserManager<User> userManager,
-        SignInManager<User> signInManager,
+        UserManager<UserModel> userManager,
+        SignInManager<UserModel> signInManager,
         IHttpContextAccessor httpContextAccessor)
     {
         Context = context;
@@ -32,7 +32,7 @@ public class CustomControllerBase<T> : ControllerBase
         RoleManager = roleManager;
         UserManager = userManager;
         SignInManager = signInManager;
-        string userIdClaim = httpContextAccessor.HttpContext?.User?.FindFirst("UserId")?.Value;
-        if (int.TryParse(userIdClaim, out int userId)) { UserId = userId; }
+        string? userIdClaim = httpContextAccessor.HttpContext?.User?.FindFirst("UserId")?.Value;
+        if (userIdClaim is not null && int.TryParse(userIdClaim, out int userId)) { UserId = userId; }
     }
 }
