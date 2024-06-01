@@ -85,6 +85,7 @@ public static class Post
 
     public static async Task<PostModel> GetPost(ApplicationDbContext context, int id)
     {
+        // Needs filtering for private users, etc like above method
         var post = await context.Posts
             .Where(p => p.Id == id && p.Status != PostStatus.Deleted)
             .FirstOrDefaultAsync();

@@ -101,46 +101,38 @@ public class PostTests(
         builderPrivateUser.Status = UserStatus.Private;
         builder.AddUser(builderPrivateUser).AddPost().AddPost();
 
-        var response = await PostService.GetPosts(Context, null, null);
+        var response = await PostService.GetPosts(Context, UserManagerMock.Object, null);
 
         Assert.NotNull(response);
         Assert.Empty(response);
     }
 
     [Fact]
-    public async Task DontShowPrivatePostsToNonFollowingLoggedInUser()
+    public async Task GetOnlyPublicAndFollowedPrivateUserPosts()
     {
         TestBuilder builder = new(Context, Output);
-        var builderPrivateUser = builder.GetBuilderUser();
-        builderPrivateUser.Status = UserStatus.Private;
-        builder.AddUser(builderPrivateUser).AddPost().AddPost();
+        var nonFollowedBuilderPrivateUser = builder.GetBuilderUser();
+        nonFollowedBuilderPrivateUser.Status = UserStatus.Private;
+        builder.AddUser(nonFollowedBuilderPrivateUser).AddPost().AddPost();  // 2 posts by a private user, non followed user
+        var followedBuilderPrivateUser = builder.GetBuilderUser();
+        followedBuilderPrivateUser.Status = UserStatus.Private;
+        builder.AddUser(followedBuilderPrivateUser).AddPost().AddPost();  // 2 posts by a private user, followed user
         var builderUser = builder.GetBuilderUser();
         builder.AddUser(builderUser);
+        builder.AddFollow(
+            builder.GetBuilderFollow(builderUser.Id, followedBuilderPrivateUser.Id));
         UserManagerMock
             .Setup(m => m.FindByIdAsync(It.IsAny<string>()))
             .ReturnsAsync(builderUser);
+        builder.AddUser().AddPost().AddPost();  // 2 posts by a public user
 
         var response = await PostService.GetPosts(Context, UserManagerMock.Object, builder.UserId);
 
         Assert.NotNull(response);
-        Assert.Empty(response);
+        Assert.Equal(4, response.Length);
+        Assert.Equal(6, response[0].Id);
+        Assert.Equal(5, response[1].Id);
     }
-
-    //[Fact]
-    //public async Task GetPostsWithNoFollowers()
-    //{
-    //    TestBuilder builder = new(Context, Output);
-    //    var builderPrivateUser = builder.GetBuilderUser();
-    //    builderPrivateUser.Status = UserStatus.Private;
-    //    builder.AddUser(builderPrivateUser).AddPost().AddPost();
-
-    //    var response = await PostService.GetPosts(Context, );
-
-    //    Assert.NotNull(response);
-    //    Assert.Equal(200, (int)response.StatusCode);
-    //    //var data = (await response.Content.ReadFromJsonAsync<RestResponseDTO<PostResponseDTO[]>>())!.Data;
-    //    Assert.Empty(data);
-    //}
 
     [Fact]
     public async Task UpdateDraftPost()

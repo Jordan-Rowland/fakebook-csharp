@@ -28,7 +28,6 @@ public class ApplicationDbContext(
     }
 
     public DbSet<Post> Posts => Set<Post>();
-    //public DbSet<User> Users => Set<User>();  // This seems to be covered by Identity
     public DbSet<Follow> Follows => Set<Follow>();
 }
 
