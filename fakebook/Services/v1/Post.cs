@@ -46,7 +46,11 @@ public static class Post
     }
 
     public static async Task<PostModel[]> GetPosts(
-        ApplicationDbContext context, UserManager<UserModel> userManager, int? userId, PagingDTO? paging = null)
+        ApplicationDbContext context,
+        UserManager<UserModel> userManager,
+        int? userId,
+        bool isAdmin = false,
+        PagingDTO? paging = null)
     {
         UserModel? currUser = userId.HasValue ? await UserService.GetUser(userManager, userId.Value, context) : null;
         var query = context.Posts
@@ -56,11 +60,11 @@ public static class Post
                 (post, user) => new { Post = post, User = user })
             .Where(joined => joined.Post.Status == PostStatus.Published)
             .Where(joined =>
-                joined.User.Status == UserStatus.Public ||
-                (joined.User.Status != UserStatus.Private &&
+                isAdmin || joined.User.Status == UserStatus.Public ||
+                joined.User.Status == UserStatus.Private &&
                     (currUser != null) &&
                     (currUser.Id == joined.User.Id
-                        || currUser.FollowingIds!.Contains(joined.User.Id))))
+                        || currUser!.FollowingIds!.Contains(joined.User.Id)))
             .OrderByDescending(joined => joined.Post.CreatedAt)
             .Select(joined => joined.Post)
             .AsQueryable();

@@ -11,10 +11,10 @@ public static class ServiceHelper
         {
             var handler = new JwtSecurityTokenHandler();
             var jwt = handler.ReadToken(token.Parameter) as JwtSecurityToken;
-            var claimsValue = jwt.Claims
+            var claimsValue = jwt!.Claims
                 .Where(c => c.Type == claimKey)
                 .Select(c => c.Value).First();
-            if (int.TryParse(claimsValue, out int UserId)) return UserId;
+            if (int.TryParse(claimsValue, out int UserClaim)) return UserClaim;
         }
         return null;
     }
